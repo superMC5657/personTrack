@@ -1,0 +1,10 @@
+*.idea
+/data/
+/fid/InsightFace_Pytorch/facenet_checkpoints/
+/fid/mtcnn/mtcnn_checkpoints/
+/pid/deep_person_reid/
+/pid/yolov4/yolov4_checkpoints/
+/pid/yolov5/yolov5_checkpoints/
+/pid/yolov5/inference/
+/pid/yolov5/.github/
+*__pycache__
