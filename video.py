@@ -2,6 +2,7 @@
 # !@time: 2020/6/10 下午10:30
 # !@author: superMC @email: 18758266469@163.com
 # !@fileName: video.py
+import time
 
 import cv2
 
@@ -29,6 +30,13 @@ def main():
     )
     index = 0
     while (cap.isOpened()):
+        start_time = time.time()  # start time of the loop
+
+        ########################
+        # your fancy code here #
+        ########################
+
+
         ret, frame = cap.read()
         if not ret:
             break
@@ -49,7 +57,7 @@ def main():
         k = cv2.waitKey(1)
         if (k & 0xff == ord('q')):
             break
-
+        print("FPS: ", 1.0 / (time.time() - start_time))  # FPS = 1 / time to process loop
         videoWriter.write(frame)
 
     cap.release()

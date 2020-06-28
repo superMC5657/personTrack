@@ -1,5 +1,8 @@
+import time
+
 import numpy as np
 from torchvision.ops.boxes import nms as c_nms
+import torch
 
 
 def IoU(box, boxes):
@@ -59,7 +62,7 @@ def convert_to_square(bbox):
 
 
 # non-maximum suppression: eleminates the box which have large interception with the box which have the largest score
-def nms(dets, thresh, mode="Union"):
+def nms_v1(dets, thresh, mode="Union"):
     """
     greedily select boxes with high confidence
     keep boxes overlap <= thresh
@@ -114,6 +117,8 @@ def nms(dets, thresh, mode="Union"):
     return keep
 
 
-def nms_v2(dets, thresh, mode):
+def nms_v2(dets, thresh, mode=None):
+    dets = torch.from_numpy(dets)
     keep = c_nms(dets[..., :4], dets[..., 4], thresh)
+    keep = keep.detach().numpy()
     return keep

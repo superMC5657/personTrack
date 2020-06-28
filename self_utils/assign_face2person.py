@@ -33,4 +33,6 @@ def generate_person(person_features, person_boxes, face_features=None, face_boxe
                 cur_person_dict[a].fBox = face_boxes[b]
                 cur_person_dict[a].fid = face_features[b]
                 cur_person_dict[a].findOut_name()
+
+
     return cur_person_dict
