@@ -5,7 +5,7 @@
 import os
 from PIL import Image
 from fid.mtcnn.detect import create_mtcnn_net, MtcnnDetector
-from self_utils.image_tool import crop_box, change_coord, warp_affine
+from self_utils.image_tool import change_coord, warp_affine, crop_box
 from torchvision import transforms as trans
 from fid.InsightFace_Pytorch.face_model import MobileFaceNet, l2_norm, Backbone
 import cv2
@@ -33,7 +33,7 @@ def mobile_face_model(weight='fid/InsightFace_Pytorch/facenet_checkpoints/model_
     return model
 
 
-def get_faces(detector, image):
+def detect_face(detector, image):
     # start = time.time()
     # for i in range(100):
     #     bboxs, landmarks = detector.detect_face(image)
@@ -41,12 +41,14 @@ def get_faces(detector, image):
     bboxs, landmarks = detector.detect_face(image)
     width = image.shape[1]
     height = image.shape[0]
+    face_boxes = []
     faces = []
     for box, landmark in zip(bboxs, landmarks):
         box[0] = np.maximum(box[0], 0)
         box[1] = np.maximum(box[1], 0)
         box[2] = np.minimum(box[2], width)  # w
         box[3] = np.minimum(box[3], height)
+
         face = crop_box(image, box)
         eye_left_x, eye_left_y = change_coord(landmark[0], landmark[1], box[0], box[1])
         eye_right_x, eye_right_y = change_coord(landmark[2], landmark[3], box[0], box[1])
@@ -57,30 +59,45 @@ def get_faces(detector, image):
             print(box, landmark)
             cv2.imwrite('data/error.png', image)
         faces.append(face)
-    return faces
+        face_boxes.append([int(_) for _ in box[:4]])
+    return faces, face_boxes
 
 
-def get_faceFeatures(faceModel, image, use_cuda=1):
+def preprocess(image):
     image = cv2.resize(image, (112, 112))
     image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    mirror = trans.functional.hflip(image)
+    # 均值为0.5 标准差为 0.5的分布
     image = trans.Compose([
-        trans.ToTensor(),
+        trans.ToTensor(),  # 0-1
         trans.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])(image)
-    mirror = trans.Compose([
-        trans.ToTensor(),
-        trans.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
-    ])(mirror)
-    if use_cuda:
-        image = image.cuda()
-        mirror = mirror.cuda()
-    image = image.unsqueeze(0)
-    mirror = mirror.unsqueeze(0)
-    features_m = faceModel(mirror)
-    features = faceModel(image)
+    return image
 
-    return l2_norm(features + features_m)
+
+def get_faceFeatures(faceModel, input, use_cuda=1):
+    if isinstance(input, list):
+        images = []
+        for image in input:
+            if isinstance(image, np.ndarray):
+                image = preprocess(image)
+            else:
+                raise TypeError(
+                    'Type of each element must belong to [str | numpy.ndarray]'
+                )
+            images.append(image)
+        images = torch.stack(images, dim=0)
+
+    elif isinstance(input, np.ndarray):
+        image = preprocess(input)
+        images = image.unsqueeze(0)
+    else:
+        raise NotImplementedError
+    if use_cuda:
+        images = images.cuda()
+    with torch.no_grad():
+        features = faceModel(images)
+
+    return features
 
 
 if __name__ == '__main__':
@@ -91,10 +108,11 @@ if __name__ == '__main__':
     mtcnn_detector = MtcnnDetector(pnet=pnet, rnet=rnet, onet=onet, min_face_size=24)
     faceModel = mobile_face_model()
     img = cv2.imread("data/aoa.jpg")
-    faces = get_faces(mtcnn_detector, img)
+    faces, _ = detect_face(mtcnn_detector, img)
     for id, face in enumerate(faces):
         image_path = os.path.join("data/face_with_name", chr(id + 65) + ".png")
         cv2.imwrite(image_path, face)
         cv2.imshow('demo', face)
         cv2.waitKey(0)
-        features = get_faceFeatures(faceModel, face)
+    features = get_faceFeatures(faceModel, faces)
+    print(features.shape)

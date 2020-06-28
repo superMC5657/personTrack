@@ -8,13 +8,14 @@ labels, old_features = get_data("data/one_man_img.csv")
 
 
 class Person(object):
-    def __init__(self):
+    def __init__(self, pid, pBox):
         self.id = 0
         self.name = 'UnKnown'
         self.fid = None  # face features
-        self.pid = None  # reid features
-        self.box = None  # bbox
-        self.time = None  # 统计帧数
+        self.pid = pid  # reid features
+        self.pBox = pBox  # person bbox
+        self.fBox = None  # face bbox
+        self.time = None
         self.fid_min_distance = None  # (min_distance, name)
 
     def findOut_name(self):

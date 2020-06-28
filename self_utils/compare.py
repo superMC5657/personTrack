@@ -4,18 +4,18 @@
 # !@fileName: csv_features.py
 import math
 import os
+import warnings
 
 import cv2
 import torch
 from sklearn.utils.linear_assignment_ import linear_assignment
 from torchreid.metrics import compute_distance_matrix
 
-from fid.inference import get_faces
-import warnings
+from fid.inference import detect_face
+from self_utils.utils import get_data
 
 warnings.filterwarnings('ignore')
 os.environ['GLOG_minloglevel'] = '3'
-import pandas as pd
 from fid.inference import mobile_face_model, get_faceFeatures
 from fid.mtcnn.detect import create_mtcnn_net, MtcnnDetector
 import numpy as np
@@ -23,15 +23,6 @@ import copy
 
 
 # 从csv文件中获取姓名与其对应的特征
-def get_data(csv_path):
-    name_features_dataframe = pd.read_csv(csv_path, sep=',')
-    name_dataframe = name_features_dataframe[['Name']]
-    features_name = ['Features%d' % i for i in range(512)]
-    features_dataframe = name_features_dataframe[features_name]
-    labels = name_dataframe.values
-    features = features_dataframe.values
-    labels = np.squeeze(labels).tolist()
-    return labels, features
 
 
 def distance(embeddings1, embeddings2, distance_metric=2):
@@ -80,7 +71,7 @@ def compare_feature(new_features, old_features, labels, threshold=1.2):
 
 # 根据features 找到超过阀值的索引所对应的NAME
 def get_names(mtcnn_detector, faceNet, labels, old_features, img, threshold=1.2):
-    faces = get_faces(mtcnn_detector, img)
+    faces, _ = detect_face(mtcnn_detector, img)
     if len(faces) == 0:
         return None
     names = []
@@ -118,17 +109,12 @@ def update_person(index, person_cache: list, cur_person_dict, metric='euclidean'
         cur_person_dict_notFound = [i for i in range(len(cur_person_dict))]
         for i in range(len(matches)):
             a, b = matches[i]
-            cur_person_dict_notFound.remove(a)
             if cost_matrix[a][b] < person_threshold:
+                cur_person_dict_notFound.remove(a)
                 cur_person_dict[a].id = person_cache[b].id
                 if cur_person_dict[a].name is "UnKnown" and person_cache[b].name is not "UnKnown":
                     cur_person_dict[a].name = person_cache[b].name
                 new_person_cache[b] = cur_person_dict[a]
-            else:
-                # 最匹配不超过阈值时
-                index += 1
-                cur_person_dict[a].id = index
-                new_person_cache.append(cur_person_dict[a])
 
         # 没找到匹配时
         for i in cur_person_dict_notFound:

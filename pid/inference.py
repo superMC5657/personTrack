@@ -27,10 +27,10 @@ if __name__ == '__main__':
 
     start = time.time()
     for index, person_image in enumerate(person_images):
-        features = extractor(person_image)
         image_path = os.path.join("data/crop_persons", chr(index + 65) + ".png")
         cv2.imwrite(image_path, person_image)
         cv2.imshow('demo', person_image)
         cv2.waitKey(0)
-        print(features.shape)
+    features = extractor(person_images)
+    print(features.shape)
     print(time.time() - start)

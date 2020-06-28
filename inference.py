@@ -2,11 +2,12 @@
 # !@time: 2020/6/10 上午10:35
 # !@author: superMC @email: 18758266469@163.com
 # !@fileName: inference.py
+import os
 
 import cv2
 from torchreid.utils import FeatureExtractor
 
-from fid.inference import get_faces, get_faceFeatures
+from fid.inference import detect_face, get_faceFeatures
 from fid.inference import mobile_face_model
 from fid.mtcnn.detect import create_mtcnn_net, MtcnnDetector
 
@@ -36,11 +37,15 @@ if __name__ == '__main__':
     image = cv2.imread("data/aoa.jpg")
     yolo, reid, mtcnn_detector, mobileFace = make_model()
     person_images, _ = detect_person(yolo, image)
+    index = 0
     for person_image in person_images:
-        faces = get_faces(mtcnn_detector, person_image)
+        faces, _ = detect_face(mtcnn_detector, person_image)
         cv2.imshow("person", person_image)
         cv2.waitKey(0)
         print(len(faces))
         for face in faces:
             cv2.imshow("demo", face)
+            image_path = os.path.join("data/face_with_name", chr(index + 65) + "1.png")
+            cv2.imwrite(image_path, face)
             cv2.waitKey()
+            index += 1

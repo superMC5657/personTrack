@@ -5,10 +5,11 @@
 
 import cv2
 
-from inference import make_model, detect_person, get_faces, get_faceFeatures
-from person import Person
+from inference import make_model, detect_person, detect_face, get_faceFeatures
+from self_utils.assign_face2person import generate_person
 from self_utils.compare import update_person
 from self_utils.image_tool import plot_boxes
+
 
 
 def main():
@@ -29,29 +30,27 @@ def main():
     )
     index = 0
     while (cap.isOpened()):
-        cur_person_dict = []
+
         ret, frame = cap.read()
-        person_images, boxes = detect_person(yolo, frame)
-        for person_image, box in zip(person_images, boxes):
-            person = Person()
-            person.box = box
-            person.pid = reid(person_image).cpu().detach()
-            face = get_faces(mtcnn_detector, person_image)
-            if len(face) == 1:
-                person.fid = get_faceFeatures(mobileFace, face[0]).cpu().detach().numpy()
-                person.findOut_name()
-                '''去cache里找'''
-            cur_person_dict.append(person)
-        person_cache, cur_person_dict, index = update_person(index, person_cache, cur_person_dict)
-        print(index)
-        image = plot_boxes(frame, cur_person_dict)
+        person_images, person_boxes = detect_person(yolo, frame)
+        if person_boxes:
+            person_features = reid(person_images).cpu().detach()
+            face_images, face_boxes = detect_face(mtcnn_detector, frame)
+            if face_boxes:
+                face_features = get_faceFeatures(mobileFace, face_images).cpu().detach().numpy()
+                cur_person_dict = generate_person(person_features, person_boxes, face_features, face_boxes)
+            else:
+                cur_person_dict = generate_person(person_features, person_boxes)
+            person_cache, cur_person_dict, index = update_person(index, person_cache, cur_person_dict)
+            frame = plot_boxes(frame, cur_person_dict)
+
         # q键退出
-        cv2.imshow('aoa', image)
+        cv2.imshow('aoa', frame)
         k = cv2.waitKey(1)
         if (k & 0xff == ord('q')):
             break
 
-        videoWriter.write(image)
+        videoWriter.write(frame)
 
     cap.release()
     videoWriter.release()

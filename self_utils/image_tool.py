@@ -5,6 +5,7 @@
 import cv2
 
 
+
 def crop_box(image, box):
     x1 = int(box[0])
     y1 = int(box[1])
@@ -20,40 +21,18 @@ def change_coord(landmark_x, landmark_y, x0, y0):
 
 
 # box1 face box2 person
-def face_person_cost(box1, box2, x1y1x2y2=True):
+def person_face_cost(person_box, face_box):
     # print('iou box1:', box1)
     # print('iou box2:', box2)
-
-    if x1y1x2y2:
-        mx = min(box1[0], box2[0])
-        Mx = max(box1[2], box2[2])
-        my = min(box1[1], box2[1])
-        My = max(box1[3], box2[3])
-        w1 = box1[2] - box1[0]
-        h1 = box1[3] - box1[1]
-        w2 = box2[2] - box2[0]
-        h2 = box2[3] - box2[1]
-    else:
-        w1 = box1[2]
-        h1 = box1[3]
-        w2 = box2[2]
-        h2 = box2[3]
-
-        mx = min(box1[0], box2[0])
-        Mx = max(box1[0] + w1, box2[0] + w2)
-        my = min(box1[1], box2[1])
-        My = max(box1[1] + h1, box2[1] + h2)
-    uw = Mx - mx
-    uh = My - my
-    cw = w1 + w2 - uw
-    ch = h1 + h2 - uh
-    carea = 0
-    if cw <= 0 or ch <= 0:
-        return 0.0
-
-    area1 = w1 * h1
-    carea = cw * ch
-    return area1 / carea
+    ix1 = max(person_box[0], face_box[0])
+    ix2 = min(person_box[2], face_box[2])
+    iy1 = max(person_box[1], face_box[1])
+    iy2 = min(person_box[3], face_box[3])
+    iw = max(0, (ix2 - ix1))
+    ih = max(0, (iy2 - iy1))
+    iarea = iw * ih
+    area1 = (face_box[2] - face_box[0]) * (face_box[3] - face_box[1])
+    return 1 - (iarea / area1)
 
 
 def warp_affine(image, x1, y1, x2, y2, scale=1.0):
@@ -72,11 +51,11 @@ def warp_affine(image, x1, y1, x2, y2, scale=1.0):
 
 def plot_boxes(image, persons):
     for i in range(len(persons)):
-        box = persons[i].box
-        x1 = box[0]
-        y1 = box[1]
-        x2 = box[2]
-        y2 = box[3]
+        pBox = persons[i].pBox
+        x1 = pBox[0]
+        y1 = pBox[1]
+        x2 = pBox[2]
+        y2 = pBox[3]
         image = cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 1)
         scale = (x2 - x1) * 0.005
         cv2.putText(image, str(persons[i].id) + persons[i].name, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, scale,
