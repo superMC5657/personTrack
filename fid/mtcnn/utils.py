@@ -1,4 +1,5 @@
 import numpy as np
+from torchvision.ops.boxes import nms as c_nms
 
 
 def IoU(box, boxes):
@@ -28,8 +29,8 @@ def IoU(box, boxes):
     h = np.maximum(0, yy2 - yy1 + 1)
 
     inter = w * h
-    ovr = np.true_divide(inter,(box_area + area - inter))
-    #ovr = inter / (box_area + area - inter)
+    ovr = np.true_divide(inter, (box_area + area - inter))
+    # ovr = inter / (box_area + area - inter)
     return ovr
 
 
@@ -49,12 +50,13 @@ def convert_to_square(bbox):
 
     h = bbox[:, 3] - bbox[:, 1] + 1
     w = bbox[:, 2] - bbox[:, 0] + 1
-    max_side = np.maximum(h,w)
-    square_bbox[:, 0] = bbox[:, 0] + w*0.5 - max_side*0.5
-    square_bbox[:, 1] = bbox[:, 1] + h*0.5 - max_side*0.5
+    max_side = np.maximum(h, w)
+    square_bbox[:, 0] = bbox[:, 0] + w * 0.5 - max_side * 0.5
+    square_bbox[:, 1] = bbox[:, 1] + h * 0.5 - max_side * 0.5
     square_bbox[:, 2] = square_bbox[:, 0] + max_side - 1
     square_bbox[:, 3] = square_bbox[:, 1] + max_side - 1
     return square_bbox
+
 
 # non-maximum suppression: eleminates the box which have large interception with the box which have the largest score
 def nms(dets, thresh, mode="Union"):
@@ -77,7 +79,7 @@ def nms(dets, thresh, mode="Union"):
     # time.sleep(5)
 
     areas = (x2 - x1 + 1) * (y2 - y1 + 1)
-    order = scores.argsort()[::-1] # argsort: ascending order then [::-1] reverse the order --> descending order
+    order = scores.argsort()[::-1]  # argsort: ascending order then [::-1] reverse the order --> descending order
     # print("shape of order {0}".format(order.size)) # (454,)
     # time.sleep(5)
 
@@ -104,7 +106,7 @@ def nms(dets, thresh, mode="Union"):
             ovr = inter / np.minimum(areas[i], areas[order[1:]])
 
         inds = np.where(ovr <= thresh)[0]
-        order = order[inds + 1] # +1: eliminates the first element in order
+        order = order[inds + 1]  # +1: eliminates the first element in order
         # print(inds)
         # print("shape of order {0}".format(order.shape))  # (454,)
         # time.sleep(2)
@@ -112,5 +114,6 @@ def nms(dets, thresh, mode="Union"):
     return keep
 
 
-
-
+def nms_v2(dets, thresh, mode):
+    keep = c_nms(dets[..., :4], dets[..., 4], thresh)
+    return keep

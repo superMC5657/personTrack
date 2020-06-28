@@ -76,7 +76,7 @@ def get_names(mtcnn_detector, faceNet, labels, old_features, img, threshold=1.2)
         return None
     names = []
     for face in faces:
-        new_features = get_faceFeatures(faceNet, face).cpu().data.numpy()
+        new_features = get_faceFeatures(faceNet, face)
         name = compare_feature(new_features, old_features, labels, threshold=threshold)[0]
         names.append(name)
     return names
@@ -126,15 +126,15 @@ def update_person(index, person_cache: list, cur_person_dict, metric='euclidean'
 
 
 def main(csv_path, img_path):
-    pnet, rnet, onet = create_mtcnn_net(p_model_path="../fid/mtcnn/mtcnn_checkpoints/pnet_epoch.pt",
-                                        r_model_path="../fid/mtcnn/mtcnn_checkpoints/rnet_epoch.pt",
-                                        o_model_path="../fid/mtcnn/mtcnn_checkpoints/onet_epoch.pt", use_cuda=True)
+    pnet, rnet, onet = create_mtcnn_net(p_model_path="fid/mtcnn/mtcnn_checkpoints/pnet_epoch.pt",
+                                        r_model_path="fid/mtcnn/mtcnn_checkpoints/rnet_epoch.pt",
+                                        o_model_path="fid/mtcnn/mtcnn_checkpoints/onet_epoch.pt", use_cuda=True)
     mtcnn_detector = MtcnnDetector(pnet=pnet, rnet=rnet, onet=onet, min_face_size=24)
-    mobileFace = mobile_face_model("../fid/InsightFace_Pytorch/checkpoints/model_ir_se50.pth")
+    mobileFace = mobile_face_model("fid/InsightFace_Pytorch/facenet_checkpoints/model_ir_se50.pth")
     labels, old_features = get_data(csv_path)
     img = cv2.imread(img_path)
     print(get_names(mtcnn_detector, mobileFace, labels, old_features, img))
 
 
 if __name__ == '__main__':
-    main(csv_path='../data/one_man_img.csv', img_path='../data/aoa.jpg')
+    main(csv_path='data/one_man_img.csv', img_path='/home/supermc/Pictures/IZTY.png')

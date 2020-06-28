@@ -11,11 +11,10 @@ from self_utils.compare import update_person
 from self_utils.image_tool import plot_boxes
 
 
-
 def main():
     yolo, reid, mtcnn_detector, mobileFace = make_model()
     person_cache = []
-    cap = cv2.VideoCapture('/home/supermc/Downloads/aoa.flv')
+    cap = cv2.VideoCapture('/home/supermc/Downloads/1080p.mp4')
     fps = cap.get(cv2.CAP_PROP_FPS)
     size = (
         int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
@@ -30,14 +29,15 @@ def main():
     )
     index = 0
     while (cap.isOpened()):
-
         ret, frame = cap.read()
+        if not ret:
+            break
         person_images, person_boxes = detect_person(yolo, frame)
         if person_boxes:
             person_features = reid(person_images).cpu().detach()
             face_images, face_boxes = detect_face(mtcnn_detector, frame)
             if face_boxes:
-                face_features = get_faceFeatures(mobileFace, face_images).cpu().detach().numpy()
+                face_features = get_faceFeatures(mobileFace, face_images)
                 cur_person_dict = generate_person(person_features, person_boxes, face_features, face_boxes)
             else:
                 cur_person_dict = generate_person(person_features, person_boxes)

@@ -66,12 +66,16 @@ def detect_face(detector, image):
 def preprocess(image):
     image = cv2.resize(image, (112, 112))
     image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    # 均值为0.5 标准差为 0.5的分布
+    mirror = trans.functional.hflip(image)
     image = trans.Compose([
-        trans.ToTensor(),  # 0-1
+        trans.ToTensor(),
         trans.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])(image)
-    return image
+    mirror = trans.Compose([
+        trans.ToTensor(),
+        trans.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+    ])(mirror)
+    return [image, mirror]
 
 
 def get_faceFeatures(faceModel, input, use_cuda=1):
@@ -84,20 +88,22 @@ def get_faceFeatures(faceModel, input, use_cuda=1):
                 raise TypeError(
                     'Type of each element must belong to [str | numpy.ndarray]'
                 )
-            images.append(image)
-        images = torch.stack(images, dim=0)
+            images.extend(image)
 
     elif isinstance(input, np.ndarray):
-        image = preprocess(input)
-        images = image.unsqueeze(0)
+        images = preprocess(input)
     else:
         raise NotImplementedError
+    images = torch.stack(images, dim=0)
     if use_cuda:
         images = images.cuda()
+    normal_features = []
     with torch.no_grad():
         features = faceModel(images)
-
-    return features
+    for i in range(0, len(features), 2):
+        normal_feature = (features[i] + features[i + 1])
+        normal_features.append(l2_norm(normal_feature).cpu().detach().numpy())
+    return normal_features
 
 
 if __name__ == '__main__':
@@ -107,12 +113,12 @@ if __name__ == '__main__':
                                         o_model_path="fid/mtcnn/mtcnn_checkpoints/onet_epoch.pt", use_cuda=True)
     mtcnn_detector = MtcnnDetector(pnet=pnet, rnet=rnet, onet=onet, min_face_size=24)
     faceModel = mobile_face_model()
-    img = cv2.imread("data/aoa.jpg")
+    img = cv2.imread("/home/supermc/Pictures/IZTY.png")
     faces, _ = detect_face(mtcnn_detector, img)
     for id, face in enumerate(faces):
         image_path = os.path.join("data/face_with_name", chr(id + 65) + ".png")
-        cv2.imwrite(image_path, face)
-        cv2.imshow('demo', face)
-        cv2.waitKey(0)
+        # cv2.imwrite(image_path, face)
+        # cv2.imshow('demo', face)
+        # cv2.waitKey(0)
     features = get_faceFeatures(faceModel, faces)
-    print(features.shape)
+    print(features)

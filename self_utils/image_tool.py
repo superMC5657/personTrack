@@ -2,8 +2,9 @@
 # !@time: 2020/6/10 上午10:59
 # !@author: superMC @email: 18758266469@163.com
 # !@fileName: image_tool.py
-import cv2
+import random
 
+import cv2
 
 
 def crop_box(image, box):
@@ -49,15 +50,18 @@ def warp_affine(image, x1, y1, x2, y2, scale=1.0):
     return rot_img
 
 
+colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(100)]
+
+
 def plot_boxes(image, persons):
     for i in range(len(persons)):
         pBox = persons[i].pBox
-        x1 = pBox[0]
-        y1 = pBox[1]
-        x2 = pBox[2]
-        y2 = pBox[3]
-        image = cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 1)
-        scale = (x2 - x1) * 0.005
-        cv2.putText(image, str(persons[i].id) + persons[i].name, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, scale,
-                    (0, 255, 0))
+        color = colors[persons[i].id]
+        image = cv2.rectangle(image, (pBox[0], pBox[1]), (pBox[2], pBox[3]), color, 2)
+        fBox = persons[i].fBox
+        if fBox:
+            image = cv2.rectangle(image, (fBox[0], fBox[1]), (fBox[2], fBox[3]), color, 2)
+        scale = (pBox[2] - pBox[0]) * 0.005
+        cv2.putText(image, str(persons[i].id) + persons[i].name, (pBox[0], pBox[1]-5), cv2.FONT_HERSHEY_SIMPLEX, scale,
+                    color)
     return image
