@@ -22,7 +22,7 @@ def generate_person(person_features, person_boxes, face_features=None, face_boxe
     person_list = [_ for _ in range(len(person_boxes))]
     cur_person_dict = [Person(person_features[i], person_boxes[i]) for i in person_list]
     if face_boxes:
-        print("faces:{}, persons:{}".format(len(face_boxes), len(person_boxes)))
+        # print("faces:{}, persons:{}".format(len(face_boxes), len(person_boxes)))
         cost_matrix = compute_cost_matrix(person_boxes, face_boxes)
         matches = linear_assignment(cost_matrix)
         for i in range(len(matches)):

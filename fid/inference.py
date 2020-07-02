@@ -98,8 +98,8 @@ def get_faceFeatures(faceModel, input, use_cuda=1):
     if use_cuda:
         images = images.cuda()
     normal_features = []
-    with torch.no_grad():
-        features = faceModel(images)
+
+    features = faceModel(images)
     for i in range(0, len(features), 2):
         normal_feature = (features[i] + features[i + 1])
         normal_features.append(l2_norm(normal_feature).cpu().detach().numpy())

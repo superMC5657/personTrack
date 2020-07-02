@@ -5,6 +5,7 @@
 import time
 
 import cv2
+import torch
 
 from inference import make_model, detect_person, detect_face, get_faceFeatures
 from self_utils.assign_face2person import generate_person
@@ -15,8 +16,9 @@ from self_utils.image_tool import plot_boxes
 def main():
     yolo, reid, mtcnn_detector, mobileFace = make_model()
     person_cache = []
-    cap = cv2.VideoCapture('/home/supermc/Downloads/1080p.mp4')
+    cap = cv2.VideoCapture('/home/supermc/Downloads/test.mp4')
     fps = cap.get(cv2.CAP_PROP_FPS)
+    speed = 10
     size = (
         int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
         int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -25,30 +27,29 @@ def main():
     videoWriter = cv2.VideoWriter(
         "data/output.avi",
         cv2.VideoWriter_fourcc(*'MJPG'),  # 编码器
-        fps,
+        fps // speed,
         size
     )
+    frame_num = 0
     index = 0
     while (cap.isOpened()):
         start_time = time.time()  # start time of the loop
-
-        ########################
-        # your fancy code here #
-        ########################
-
-
+        frame_num += 1
         ret, frame = cap.read()
+        if frame_num % speed != 0:
+            continue
+
         if not ret:
             break
+
         person_images, person_boxes = detect_person(yolo, frame)
         if person_boxes:
+            face_features, face_boxes = None, None
             person_features = reid(person_images).cpu().detach()
             face_images, face_boxes = detect_face(mtcnn_detector, frame)
             if face_boxes:
                 face_features = get_faceFeatures(mobileFace, face_images)
-                cur_person_dict = generate_person(person_features, person_boxes, face_features, face_boxes)
-            else:
-                cur_person_dict = generate_person(person_features, person_boxes)
+            cur_person_dict = generate_person(person_features, person_boxes, face_features, face_boxes)
             person_cache, cur_person_dict, index = update_person(index, person_cache, cur_person_dict)
             frame = plot_boxes(frame, cur_person_dict)
 
@@ -57,8 +58,9 @@ def main():
         k = cv2.waitKey(1)
         if (k & 0xff == ord('q')):
             break
-        print("FPS: ", 1.0 / (time.time() - start_time))  # FPS = 1 / time to process loop
         videoWriter.write(frame)
+        if frame_num % (10 * speed) == 0:
+            print("FPS: ", 1.0 / (time.time() - start_time))  # FPS = 1 / time to process loop
 
     cap.release()
     videoWriter.release()
@@ -66,4 +68,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    with torch.no_grad():
+        main()
