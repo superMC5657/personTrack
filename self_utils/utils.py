@@ -4,6 +4,7 @@
 # !@fileName: utils.py
 import pandas as pd
 import numpy as np
+import torch
 
 
 def get_data(csv_path):
@@ -15,3 +16,10 @@ def get_data(csv_path):
     features = features_dataframe.values
     labels = np.squeeze(labels).tolist()
     return labels, features
+
+
+def tonumpy(data):
+    if isinstance(data, np.ndarray):
+        return data
+    if isinstance(data, torch.Tensor):
+        return data.detach().cpu().numpy()

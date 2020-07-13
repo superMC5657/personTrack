@@ -1,20 +1,18 @@
 # -*- coding: utf-8 -*-
 # !@time: 2020/6/9 上午5:42
 # !@author: superMC @email: 18758266469@163.com
-# !@fileName: face_model.py
+# !@fileName: demo.py
 import os
 
 import cv2
 from torchreid.utils import FeatureExtractor
-# from pid.yolov4.yolov4 import yolov4_model as yolo_model
-# from pid.yolov4.yolov4 import detect_person
-from pid.yolov5.yolov5 import yolov5_model as yolo_model
-from pid.yolov5.yolov5 import detect_person
+from pid.yolov4.yolov4 import YoloV4 as Yolo
+# from pid.yolov5.yolov5 import YoloV5 as Yolo
 
 if __name__ == '__main__':
     import time
 
-    model = yolo_model()
+    yolo = Yolo()
     # model = yolov5_model("pid/yolov5/weights/yolov5l_resave.pt")
     extractor = FeatureExtractor(
         model_name='osnet_x1_0',
@@ -23,7 +21,7 @@ if __name__ == '__main__':
 
     image = cv2.imread("data/aoa.jpg")
     # person_images, _ = detect_person(model, image)
-    person_images, _ = detect_person(model, image)
+    person_images, _ = yolo(image)
 
     start = time.time()
     for index, person_image in enumerate(person_images):

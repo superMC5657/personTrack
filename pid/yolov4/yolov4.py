@@ -10,42 +10,44 @@ import numpy as np
 from self_utils.image_tool import crop_box
 
 
-def yolov4_model(cfg="pid/yolov4/cfg/yolov4.cfg", weight="pid/yolov4/yolov4_checkpoints/yolov4.weights", use_cuda=1):
-    model = Darknet(cfg)
+class YoloV4:
+    def __init__(self, cfg="pid/yolov4/cfg/yolov4.cfg", weight="pid/yolov4/yolov4_checkpoints/yolov4.weights",
+                 use_cuda=1):
+        model = Darknet(cfg)
 
-    # model.print_network()
-    model.load_weights(weight)
-    # 1print('Loading weights from %s... Done!' % (weight))
-    if use_cuda:
-        model.cuda()
-    model.eval()
-    return model
+        # model.print_network()
+        model.load_weights(weight)
+        # 1print('Loading weights from %s... Done!' % (weight))
+        if use_cuda:
+            model.cuda()
+        model.eval()
+        self.model = model
+        del model
 
-
-def detect_person(model, image):
-    rgb_image = cv2.resize(image, (model.width, model.height))
-    rgb_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB)
-    boxes = do_detect(model, rgb_image, 0.5, 80, 0.4)
-    new_boxes = []
-    person_images = []
-    for box in boxes:
-        if box[-1] == 0:
-            width = image.shape[1]
-            height = image.shape[0]
-            new_box = [0] * 4
-            new_box[0] = np.maximum(int((box[0] - box[2] / 2.0) * width), 0)
-            new_box[1] = np.maximum(int((box[1] - box[3] / 2.0) * height), 0)
-            new_box[2] = np.minimum(int((box[0] + box[2] / 2.0) * width), width)  # w
-            new_box[3] = np.minimum(int((box[1] + box[3] / 2.0) * height), height)
-            person_images.append(crop_box(image, new_box))
-            new_boxes.append(new_box)
-    return person_images, new_boxes
+    def __call__(self, image):
+        rgb_image = cv2.resize(image, (self.model.width, self.model.height))
+        rgb_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB)
+        boxes = do_detect(self.model, rgb_image, 0.5, 80, 0.4)
+        new_boxes = []
+        person_images = []
+        for box in boxes:
+            if box[-1] == 0:
+                width = image.shape[1]
+                height = image.shape[0]
+                new_box = [0] * 4
+                new_box[0] = np.maximum(int((box[0] - box[2] / 2.0) * width), 0)
+                new_box[1] = np.maximum(int((box[1] - box[3] / 2.0) * height), 0)
+                new_box[2] = np.minimum(int((box[0] + box[2] / 2.0) * width), width)  # w
+                new_box[3] = np.minimum(int((box[1] + box[3] / 2.0) * height), height)
+                person_images.append(crop_box(image, new_box))
+                new_boxes.append(new_box)
+        return person_images, new_boxes
 
 
 if __name__ == '__main__':
-    model = yolov4_model("pid/yolov4/cfg/yolov4.cfg", "pid/yolov4/yolov4_checkpoints/yolov4.weights")
+    model = YoloV4()
     image = cv2.imread('data/aoa.jpg')
-    person_images, boxes = detect_person(model, image)
+    person_images, boxes = model(image)
     for index, person_image in enumerate(person_images):
         cv2.imshow('demo', person_image)
         cv2.waitKey(0)

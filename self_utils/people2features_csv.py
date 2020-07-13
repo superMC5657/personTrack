@@ -2,21 +2,21 @@
 # !@time: 19-4-27 下午9:42
 # !@author: superMC @email: 18758266469@163.com
 # !@fileName: people2features.py
-
 import os
-from fid.inference import detect_face, mobile_face_model, get_faceFeatures
 import csv
-from fid.mtcnn.detect import create_mtcnn_net, MtcnnDetector
 import numpy as np
 import cv2
 
+from fid.insightFace.faceNet import FaceNet
+from fid.mtcnn.mtcnn import MTCNN
+from fid.retinaFace.detector import Detector as RetinaFace
 
-def one_manImg(img_dir, csv_path, model_path="fid/InsightFace_Pytorch/facenet_checkpoints/model_ir_se50.pth"):
-    pnet, rnet, onet = create_mtcnn_net(p_model_path="fid/mtcnn/mtcnn_checkpoints/pnet_epoch.pt",
-                                        r_model_path="fid/mtcnn/mtcnn_checkpoints/rnet_epoch.pt",
-                                        o_model_path="fid/mtcnn/mtcnn_checkpoints/onet_epoch.pt", use_cuda=True)
-    mtcnn_detector = MtcnnDetector(pnet=pnet, rnet=rnet, onet=onet, min_face_size=24)
-    mobileFace = mobile_face_model(model_path)
+
+def one_manImg(img_dir, csv_path, retinaFace_weight="fid/retinaFace/retinaFace_checkpoints/mobilenet0.25_Final.pth",
+               faceNet_weigt="fid/insightFace/facenet_checkpoints/model_ir_se50.pth"):
+    detector = RetinaFace(retinaFace_weight) # choice mtcnn/retinaFace
+    # detector = MTCNN()
+    mobileFace = FaceNet(faceNet_weigt)
     img_paths = os.listdir(img_dir)
     if not os.path.exists(csv_path):
         print('创建数据库')
@@ -38,12 +38,12 @@ def one_manImg(img_dir, csv_path, model_path="fid/InsightFace_Pytorch/facenet_ch
             else:
                 img_path = os.path.join(img_dir, img_path)
                 image = cv2.imread(img_path)
-                faces, _ = detect_face(mtcnn_detector, image)
+                faces, _ = detector(image)
                 if len(faces) == 1:
                     print('正在输入:', label)
                     # cv2.imshow('demo', faces[0])
                     # cv2.waitKey(0)
-                    features = get_faceFeatures(mobileFace, faces[0])[0]
+                    features = mobileFace(faces[0])[0]
                     content = np.append(label, features)
                     writer.writerow(content)
 
@@ -52,8 +52,8 @@ def one_manImg(img_dir, csv_path, model_path="fid/InsightFace_Pytorch/facenet_ch
 
 
 def no_detect_one_manImg(img_dir, csv_path,
-                         model_path="fid/InsightFace_Pytorch/facenet_checkpoints/model_ir_se50.pth"):
-    mobileFace = mobile_face_model(model_path)
+                         model_path="fid/insightFace/facenet_checkpoints/model_ir_se50.pth"):
+    mobileFace = FaceNet(model_path)
     img_paths = os.listdir(img_dir)
     img_paths = [x for x in img_paths if x.endswith('.png') or x.endswith('.jpg')]
     if not os.path.exists(csv_path):
@@ -77,7 +77,7 @@ def no_detect_one_manImg(img_dir, csv_path,
                 print('正在输入:', label)
                 img_path = os.path.join(img_dir, img_path)
                 face = cv2.imread(img_path)
-                features = get_faceFeatures(mobileFace, face)[0]
+                features = mobileFace(face)[0]
                 content = np.append(label, features)
                 writer.writerow(content)
 

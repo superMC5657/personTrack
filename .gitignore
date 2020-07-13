@@ -1,6 +1,6 @@
 *.idea
 /data/
-/fid/InsightFace_Pytorch/facenet_checkpoints/
+/fid/insightFace/facenet_checkpoints/
 /fid/mtcnn/mtcnn_checkpoints/
 /pid/deep_person_reid/
 /pid/yolov4/yolov4_checkpoints/

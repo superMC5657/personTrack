@@ -11,13 +11,13 @@ import torch
 from sklearn.utils.linear_assignment_ import linear_assignment
 from torchreid.metrics import compute_distance_matrix
 
-from fid.inference import detect_face
+from fid.mtcnn.mtcnn import MTCNN
+from fid.retinaFace.detector import Detector as RetinaFace
 from self_utils.utils import get_data
 
 warnings.filterwarnings('ignore')
 os.environ['GLOG_minloglevel'] = '3'
-from fid.inference import mobile_face_model, get_faceFeatures
-from fid.mtcnn.detect import create_mtcnn_net, MtcnnDetector
+from fid.demo import FaceNet
 import numpy as np
 import copy
 
@@ -48,13 +48,6 @@ def distance(embeddings1, embeddings2, distance_metric=2):
     return dist
 
 
-# def distancev2(featureLs, featureRs):
-#     featureLs = featureLs / np.expand_dims(np.sqrt(np.sum(np.power(featureLs, 2), 1)), 1)
-#     featureRs = featureRs / np.expand_dims(np.sqrt(np.sum(np.power(featureRs, 2), 1)), 1)
-#     scores = np.sum(np.multiply(featureLs, featureRs), 1)
-#     return scores
-
-
 # 比较csv中的features和传入新人脸的features
 def compare_feature(new_features, old_features, labels, threshold=1.2):
     # distances = pw.pairwise_distances(new_features, old_features, metric)
@@ -70,13 +63,13 @@ def compare_feature(new_features, old_features, labels, threshold=1.2):
 
 
 # 根据features 找到超过阀值的索引所对应的NAME
-def get_names(mtcnn_detector, faceNet, labels, old_features, img, threshold=1.2):
-    faces, _ = detect_face(mtcnn_detector, img)
+def get_names(detector, faceNet, labels, old_features, img, threshold=1.2):
+    faces, _ = detector(img)
     if len(faces) == 0:
         return None
     names = []
     for face in faces:
-        new_features = get_faceFeatures(faceNet, face)
+        new_features = faceNet(face)
         name = compare_feature(new_features, old_features, labels, threshold=threshold)[0]
         names.append(name)
     return names
@@ -126,14 +119,12 @@ def update_person(index, person_cache: list, cur_person_dict, metric='euclidean'
 
 
 def main(csv_path, img_path):
-    pnet, rnet, onet = create_mtcnn_net(p_model_path="fid/mtcnn/mtcnn_checkpoints/pnet_epoch.pt",
-                                        r_model_path="fid/mtcnn/mtcnn_checkpoints/rnet_epoch.pt",
-                                        o_model_path="fid/mtcnn/mtcnn_checkpoints/onet_epoch.pt", use_cuda=True)
-    mtcnn_detector = MtcnnDetector(pnet=pnet, rnet=rnet, onet=onet, min_face_size=24)
-    mobileFace = mobile_face_model("fid/InsightFace_Pytorch/facenet_checkpoints/model_ir_se50.pth")
+    # detector = MTCNN()
+    detector = RetinaFace()
+    mobileFace = FaceNet("fid/insightFace/facenet_checkpoints/model_ir_se50.pth")
     labels, old_features = get_data(csv_path)
     img = cv2.imread(img_path)
-    print(get_names(mtcnn_detector, mobileFace, labels, old_features, img))
+    print(get_names(detector, mobileFace, labels, old_features, img))
 
 
 if __name__ == '__main__':
