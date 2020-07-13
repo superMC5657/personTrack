@@ -59,7 +59,7 @@ def plot_boxes(image, persons):
         color = colors[persons[i].id]
         image = cv2.rectangle(image, (pBox[0], pBox[1]), (pBox[2], pBox[3]), color, 2)
         fBox = persons[i].fBox
-        if fBox:
+        if fBox is not None:
             image = cv2.rectangle(image, (fBox[0], fBox[1]), (fBox[2], fBox[3]), color, 2)
         scale = (pBox[2] - pBox[0]) * 0.005
         cv2.putText(image, str(persons[i].id) + persons[i].name, (pBox[0], pBox[1]-5), cv2.FONT_HERSHEY_SIMPLEX, scale,

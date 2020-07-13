@@ -7,7 +7,7 @@ import torch
 import os
 
 from torchvision.ops import nms
-
+import numpy as np
 from self_utils.image_tool import crop_box, change_coord, warp_affine
 from self_utils.utils import tonumpy
 from .data import cfg_mnet, cfg_re50
@@ -81,10 +81,10 @@ class Detector:
                                      image_size[1], image_size[0], image_size[1], image_size[0],
                                      image_size[1], image_size[0]])
         self.scale_landms = scale_landms.to(device)
-        self.confidence_threshold = 0.4
+        self.confidence_threshold = 0.5
         self.top_k = 2000
         self.keep_top_k = 150
-        self.nms_threshold = 0.4
+        self.nms_threshold = 0.5
         self.image_size = image_size
         del net, priorbox, priors
 
@@ -138,6 +138,11 @@ class Detector:
         boxes[:, slice(1, 4, 2)] *= height_resize
         landms[:, slice(0, 10, 2)] *= width_resize
         landms[:, slice(1, 10, 2)] *= height_resize
+
+        boxes[:, 0] = np.maximum(boxes[:, 0], 0)
+        boxes[:, 1] = np.maximum(boxes[:, 1], 0)
+        boxes[:, 2] = np.minimum(boxes[:, 2], im_width)  # w
+        boxes[:, 3] = np.minimum(boxes[:, 3], im_height)
 
         faces = list()
         for box, landm in zip(boxes, landms):

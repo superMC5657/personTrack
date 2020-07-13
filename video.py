@@ -6,6 +6,7 @@ import time
 
 import cv2
 import torch
+from torch.backends import cudnn
 from torchreid.utils import FeatureExtractor
 
 from fid.insightFace.faceNet import FaceNet
@@ -16,6 +17,8 @@ from self_utils.assign_face2person import generate_person
 from self_utils.compare import update_person
 from self_utils.image_tool import plot_boxes
 
+cudnn.benchmark = True
+
 
 def main():
     yolo = YoloV5()
@@ -24,11 +27,11 @@ def main():
         model_name='osnet_x1_0',
         model_path='deep_person_reid/checkpoints/osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth',
     )
-    # detector = RetinaFace()
-    detector = MTCNN()
+    detector = RetinaFace()
+    # detector = MTCNN()
     faceNet = FaceNet()
     person_cache = []
-    cap = cv2.VideoCapture('/home/supermc/Downloads/test.mp4')
+    cap = cv2.VideoCapture('/home/supermc/Downloads/1080p.mp4')
     fps = cap.get(cv2.CAP_PROP_FPS)
     speed = 10
     size = (
@@ -57,9 +60,9 @@ def main():
         person_images, person_boxes = yolo(frame)
         if person_boxes:
             face_features, face_boxes = None, None
-            person_features = (person_images).cpu().detach()
+            person_features = reid(person_images).cpu().detach()
             face_images, face_boxes = detector(frame)
-            if face_boxes:
+            if len(face_boxes) > 0:
                 face_features = faceNet(face_images)
             cur_person_dict = generate_person(person_features, person_boxes, face_features, face_boxes)
             person_cache, cur_person_dict, index = update_person(index, person_cache, cur_person_dict)
