@@ -27,13 +27,13 @@ def main():
         model_name='osnet_x1_0',
         model_path='deep_person_reid/checkpoints/osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth',
     )
-    detector = RetinaFace()
-    # detector = MTCNN()
+    # detector = RetinaFace()
+    detector = MTCNN()
     faceNet = FaceNet()
     person_cache = []
     cap = cv2.VideoCapture('/home/supermc/Downloads/1080p.mp4')
     fps = cap.get(cv2.CAP_PROP_FPS)
-    speed = 10
+    speed = 1
     size = (
         int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
         int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -47,7 +47,8 @@ def main():
     )
     frame_num = 0
     index = 0
-    while (cap.isOpened()):
+    vis = True
+    while cap.isOpened():
         start_time = time.time()  # start time of the loop
         frame_num += 1
         ret, frame = cap.read()
@@ -69,10 +70,11 @@ def main():
             frame = plot_boxes(frame, cur_person_dict)
 
         # q键退出
-        cv2.imshow('aoa', frame)
-        k = cv2.waitKey(1)
-        if (k & 0xff == ord('q')):
-            break
+        if vis:
+            cv2.imshow('aoa', frame)
+            k = cv2.waitKey(1)
+            if (k & 0xff == ord('q')):
+                break
         videoWriter.write(frame)
         if frame_num % (10 * speed) == 0:
             print("FPS: ", 1.0 / (time.time() - start_time))  # FPS = 1 / time to process loop

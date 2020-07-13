@@ -13,7 +13,7 @@ if __name__ == '__main__':
     retinaFace_detector = RetinaFace()
     # mtcnn_detector = MTCNN()
     faceModel = FaceNet()
-    img = cv2.imread("data/aoa.jpg")
+    img = cv2.imread("data/IZTY.png")
     # faces, _ = retinaFace_detector(img)
     faces, _ = retinaFace_detector(img)
     for id, face in enumerate(faces):

@@ -19,8 +19,8 @@ def compute_cost_matrix(person_boxes, face_boxes):
 
 def generate_person(person_features, person_boxes, face_features=None, face_boxes=None, threashold=0.5):
     # face_list = [_ for _ in range(len(face_boxes))]
-    person_list = [_ for _ in range(len(person_boxes))]
-    cur_person_dict = [Person(person_features[i], person_boxes[i]) for i in person_list]
+    # person_list = [_ for _ in range(len(person_boxes))]
+    cur_person_dict = [Person(person_features[i], person_boxes[i]) for i in range(len(person_boxes))]
     if face_boxes is not None:
         # print("faces:{}, persons:{}".format(len(face_boxes), len(person_boxes)))
         cost_matrix = compute_cost_matrix(person_boxes, face_boxes)
@@ -28,11 +28,10 @@ def generate_person(person_features, person_boxes, face_features=None, face_boxe
         for i in range(len(matches)):
             a, b = matches[i]
             if cost_matrix[a][b] < threashold:
-                person_list.remove(a)
+                # person_list.remove(a)
                 # face_list.remove(b)
                 cur_person_dict[a].fBox = face_boxes[b]
                 cur_person_dict[a].fid = face_features[b]
                 cur_person_dict[a].findOut_name()
-
 
     return cur_person_dict

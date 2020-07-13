@@ -53,7 +53,8 @@ def load_model(model, pretrained_path, load_to_gpu):
 
 
 class Detector:
-    def __init__(self, weight="fid/retinaFace/retinaFace_checkpoints/mobilenet0.25_Final.pth", image_size=(640, 640),
+    # image_size = height,width
+    def __init__(self, weight="fid/retinaFace/retinaFace_checkpoints/mobilenet0.25_Final.pth", image_size=(648, 1152),
                  use_cuda=1):
         network = os.path.split(weight)[-1].split("_")[0]
         device = torch.device("cuda" if use_cuda else "cpu")
@@ -117,8 +118,8 @@ class Detector:
         im_height, im_width, _ = image.shape
         height_resize = im_height / self.image_size[0]
         width_resize = im_width / self.image_size[1]
-
-        img = cv2.resize(image, self.image_size)
+        # cv2 resize width,height
+        img = cv2.resize(image, (self.image_size[1], self.image_size[0]))
         img = img - (104, 117, 123)
         img = img.transpose(2, 0, 1)
         img = torch.from_numpy(img).unsqueeze(0).type(dtype=torch.float)
@@ -134,6 +135,7 @@ class Detector:
         landms = landms.cpu()
 
         boxes, landms = self.nonMaximumSuppression(boxes, landms, scores)
+
         boxes[:, slice(0, 4, 2)] *= width_resize
         boxes[:, slice(1, 4, 2)] *= height_resize
         landms[:, slice(0, 10, 2)] *= width_resize
