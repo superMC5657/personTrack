@@ -14,10 +14,10 @@ if __name__ == '__main__':
 
     yolo = Yolo()
     # model = yolov5_model("pid/yolov5/weights/yolov5l_resave.pt")
-    extractor = FeatureExtractor(
+    reid = FeatureExtractor(
         model_name='osnet_x1_0',
-        model_path='deep_person_reid/checkpoints/osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth',
-    )
+        model_path='pid/deep_person_reid/checkpoints/osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth',
+        verbose=False)
 
     image = cv2.imread("data/aoa.jpg")
     # person_images, _ = detect_person(model, image)
@@ -29,6 +29,6 @@ if __name__ == '__main__':
         cv2.imwrite(image_path, person_image)
         cv2.imshow('demo', person_image)
         cv2.waitKey(0)
-    features = extractor(person_images)
+    features = reid(person_images)
     print(features.shape)
     print(time.time() - start)
