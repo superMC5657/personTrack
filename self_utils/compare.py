@@ -84,7 +84,7 @@ def combine_pid(persons):
 
 
 # 通过person reid 更新person
-def update_person(index, person_cache: list, cur_person_dict, metric='euclidean', person_threshold=100):
+def update_person(index, person_cache: list, cur_person_dict, metric='euclidean', person_threshold=10):
     # cost_matrix = pw.pairwise_distances(combine_pid(person_cache), combine_pid(cur_person_dict))
     # cost_matrix = distance(combine_pid(person_cache), combine_pid(cur_person_dict))
 

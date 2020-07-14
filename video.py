@@ -31,7 +31,7 @@ def main():
     detector = MTCNN()
     faceNet = FaceNet()
     person_cache = []
-    cap = cv2.VideoCapture('/home/supermc/Downloads/1080p.mp4')
+    cap = cv2.VideoCapture('data/data0.avi')
     fps = cap.get(cv2.CAP_PROP_FPS)
     speed = 1
     size = (
@@ -42,7 +42,7 @@ def main():
     videoWriter = cv2.VideoWriter(
         "data/output.avi",
         cv2.VideoWriter_fourcc(*'MJPG'),  # 编码器
-        fps // speed,
+        fps / speed,
         size
     )
     frame_num = 0
