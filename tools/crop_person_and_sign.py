@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-# !@time: 2020/6/9 上午5:42
+# !@time: 2020/7/20 下午7:25
 # !@author: superMC @email: 18758266469@163.com
-# !@fileName: demo.py
+# !@fileName: crop_person_and_sign.py
+
 import os
 
 import cv2
@@ -15,10 +16,6 @@ if __name__ == '__main__':
 
     yolo = Yolo()
     # model = yolov5_model("pid/yolov5/weights/yolov5l_resave.pt")
-    reid = FeatureExtractor(
-        model_name='osnet_x1_0',
-        model_path='pid/deep_person_reid/checkpoints/osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth',
-        verbose=False)
 
     image = cv2.imread("data/aoa.jpg")
     # person_images, _ = detect_person(model, image)
@@ -26,8 +23,7 @@ if __name__ == '__main__':
 
     start = time.time()
     for index, person_image in enumerate(person_images):
+        image_path = os.path.join("data/crop_persons", chr(index + 65) + ".png")
+        cv2.imwrite(image_path, person_image)
         cv2.imshow('demo', person_image)
         cv2.waitKey(0)
-    features = reid(person_images)
-    print(features.shape)
-    print(time.time() - start)

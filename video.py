@@ -13,25 +13,24 @@ from fid.insightFace.faceNet import FaceNet
 from fid.mtcnn.mtcnn import MTCNN
 from fid.retinaFace.detector import Detector as RetinaFace
 from pid.yolov5.yolov5 import YoloV5
-from self_utils.assign_face2person import generate_person
-from self_utils.compare import update_person
+from self_utils.person_utils import generate_person, compression_person, update_person
 from self_utils.image_tool import plot_boxes
 
 cudnn.benchmark = True
+torch.set_grad_enabled(False)
 
 
 def main():
     yolo = YoloV5()
-    # model = yolov5_model("pid/yolov5/weights/yolov5l_resave.pt")
     reid = FeatureExtractor(
         model_name='osnet_x1_0',
         model_path='pid/deep_person_reid/checkpoints/osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth',
         verbose=False)
-    # detector = RetinaFace()
-    detector = MTCNN()
+    detector = RetinaFace(image_size=(720, 1280))
+    # detector = MTCNN()
     faceNet = FaceNet()
     person_cache = []
-    cap = cv2.VideoCapture('data/data0.avi')
+    cap = cv2.VideoCapture('data/1080p.mp4')
     fps = cap.get(cv2.CAP_PROP_FPS)
     speed = 1
     size = (
@@ -47,6 +46,7 @@ def main():
     )
     frame_num = 0
     index = 0
+    compress_time = 1000
     vis = True
     while cap.isOpened():
         start_time = time.time()  # start time of the loop
@@ -67,13 +67,16 @@ def main():
                 face_features = faceNet(face_images)
             cur_person_dict = generate_person(person_features, person_boxes, face_features, face_boxes)
             person_cache, cur_person_dict, index = update_person(index, person_cache, cur_person_dict)
-            frame = plot_boxes(frame, cur_person_dict)
+            frame = plot_boxes(frame, cur_person_dict, fps)
 
+        if frame_num % compress_time == 0:
+            person_cache = compression_person(person_cache)
+            
         # q键退出
         if vis:
-            cv2.imshow('aoa', frame)
+            cv2.imshow('frame', frame)
             k = cv2.waitKey(1)
-            if (k & 0xff == ord('q')):
+            if k & 0xff == ord('q'):
                 break
         videoWriter.write(frame)
         if frame_num % (10 * speed) == 0:
@@ -85,5 +88,4 @@ def main():
 
 
 if __name__ == '__main__':
-    with torch.no_grad():
-        main()
+    main()

@@ -8,3 +8,4 @@
 /pid/yolov5/inference/
 /pid/yolov5/.github/
 *__pycache__
+/fid/retinaFace/retinaFace_checkpoints/Resnet50_Final.pth

@@ -6,6 +6,8 @@ import random
 
 import cv2
 
+from self_utils.utils import colors
+
 
 def crop_box(image, box):
     x1 = int(box[0])
@@ -50,10 +52,10 @@ def warp_affine(image, x1, y1, x2, y2, scale=1.0):
     return rot_img
 
 
-colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(100)]
-
-
-def plot_boxes(image, persons):
+def plot_boxes(image, persons, fps=25):
+    im_height, im_width, _ = image.shape
+    scale = 0.6
+    persons = sorted(persons, key=lambda x: x.id)
     for i in range(len(persons)):
         pBox = persons[i].pBox
         color = colors[persons[i].id]
@@ -61,7 +63,10 @@ def plot_boxes(image, persons):
         fBox = persons[i].fBox
         if fBox is not None:
             image = cv2.rectangle(image, (fBox[0], fBox[1]), (fBox[2], fBox[3]), color, 2)
-        scale = (pBox[2] - pBox[0]) * 0.01
-        cv2.putText(image, str(persons[i].id) + persons[i].name, (pBox[0], pBox[3]), cv2.FONT_HERSHEY_SIMPLEX, scale,
-                    color)
+
+        cv2.putText(image, str(persons[i].id) + " " + persons[i].name, (pBox[0] + 5, pBox[3] - 5),
+                    cv2.FONT_HERSHEY_SIMPLEX, scale, color)
+
+        cv2.putText(image, str(persons[i].id) + " " + persons[i].name + " " + str(int(persons[i].fps_num / fps)),
+                    (5, im_height - 20 * (i + 1)), cv2.FONT_HERSHEY_SIMPLEX, scale, color)
     return image

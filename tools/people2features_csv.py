@@ -6,15 +6,20 @@ import os
 import csv
 import numpy as np
 import cv2
+import torch
+from torch.backends import cudnn
 
 from fid.insightFace.faceNet import FaceNet
 from fid.mtcnn.mtcnn import MTCNN
 from fid.retinaFace.detector import Detector as RetinaFace
 
+cudnn.benchmark = True
+torch.set_grad_enabled(False)
+
 
 def one_manImg(img_dir, csv_path, retinaFace_weight="fid/retinaFace/retinaFace_checkpoints/mobilenet0.25_Final.pth",
                faceNet_weigt="fid/insightFace/facenet_checkpoints/model_ir_se50.pth"):
-    detector = RetinaFace(retinaFace_weight) # choice mtcnn/retinaFace
+    detector = RetinaFace(retinaFace_weight)  # choice mtcnn/retinaFace
     # detector = MTCNN()
     mobileFace = FaceNet(faceNet_weigt)
     img_paths = os.listdir(img_dir)
@@ -38,11 +43,10 @@ def one_manImg(img_dir, csv_path, retinaFace_weight="fid/retinaFace/retinaFace_c
             else:
                 img_path = os.path.join(img_dir, img_path)
                 image = cv2.imread(img_path)
-                faces, _ = detector(image)
+                faces, _ = detector.forward_for_makecsv(image)
                 if len(faces) == 1:
                     print('正在输入:', label)
-                    # cv2.imshow('demo', faces[0])
-                    # cv2.waitKey(0)
+                    cv2.imwrite('data/cache/' + os.path.split(img_path)[-1], faces[0])
                     features = mobileFace(faces[0])[0]
                     content = np.append(label, features)
                     writer.writerow(content)
@@ -63,6 +67,7 @@ def no_detect_one_manImg(img_dir, csv_path,
             header = ['Features%d' % x for x in range(512)]
             header.insert(0, 'Name')
             writer.writerow(header)
+
     with open(csv_path, 'r', encoding='UTF-8') as file_csv:
         reader = csv.reader(file_csv)
         names = [row[0] for row in reader][1:]

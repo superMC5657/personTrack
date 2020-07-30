@@ -54,7 +54,7 @@ def load_model(model, pretrained_path, load_to_gpu):
 
 class Detector:
     # image_size = height,width
-    def __init__(self, weight="fid/retinaFace/retinaFace_checkpoints/mobilenet0.25_Final.pth", image_size=(648, 1152),
+    def __init__(self, weight="fid/retinaFace/retinaFace_checkpoints/mobilenet0.25_Final.pth", image_size=(480, 640),
                  use_cuda=1):
         network = os.path.split(weight)[-1].split("_")[0]
         device = torch.device("cuda" if use_cuda else "cpu")
@@ -140,6 +140,54 @@ class Detector:
         boxes[:, slice(1, 4, 2)] *= height_resize
         landms[:, slice(0, 10, 2)] *= width_resize
         landms[:, slice(1, 10, 2)] *= height_resize
+
+        boxes[:, 0] = np.maximum(boxes[:, 0], 0)
+        boxes[:, 1] = np.maximum(boxes[:, 1], 0)
+        boxes[:, 2] = np.minimum(boxes[:, 2], im_width)  # w
+        boxes[:, 3] = np.minimum(boxes[:, 3], im_height)
+
+        faces = list()
+        for box, landm in zip(boxes, landms):
+            face = crop_box(image, box)
+            eye_left_x, eye_left_y = change_coord(landm[0], landm[1], box[0], box[1])
+            eye_right_x, eye_right_y = change_coord(landm[2], landm[3], box[0], box[1])
+            face = warp_affine(image=face, x1=eye_left_x, y1=eye_left_y, x2=eye_right_x, y2=eye_right_y)
+            faces.append(face)
+        return faces, boxes
+
+    def forward_for_makecsv(self, image):
+
+        im_height, im_width, _ = image.shape
+        image_size = (im_height, im_width)
+        priorbox = PriorBox(self.cfg, image_size=image_size)
+        priors = priorbox.forward()
+        priors = priors.to(self.device)
+        self.prior_data = priors.data
+
+        scale_box = torch.Tensor([image_size[1], image_size[0], image_size[1], image_size[0]])
+        self.scale_box = scale_box.to(self.device)
+
+        scale_landms = torch.Tensor([image_size[1], image_size[0], image_size[1], image_size[0],
+                                     image_size[1], image_size[0], image_size[1], image_size[0],
+                                     image_size[1], image_size[0]])
+        self.scale_landms = scale_landms.to(self.device)
+
+        # cv2 resize width,height
+        img = image - (104, 117, 123)
+        img = img.transpose(2, 0, 1)
+        img = torch.from_numpy(img).unsqueeze(0).type(dtype=torch.float)
+        img = img.to(self.device)
+
+        loc, conf, landms = self.net(img)
+        boxes = decode(loc.data.squeeze(0), self.prior_data, self.cfg['variance'])
+        boxes = boxes * self.scale_box
+        boxes = boxes.cpu()
+        scores = conf.squeeze(0).data.cpu()[:, 1]
+        landms = decode_landm(landms.data.squeeze(0), self.prior_data, self.cfg['variance'])
+        landms = landms * self.scale_landms
+        landms = landms.cpu()
+
+        boxes, landms = self.nonMaximumSuppression(boxes, landms, scores)
 
         boxes[:, 0] = np.maximum(boxes[:, 0], 0)
         boxes[:, 1] = np.maximum(boxes[:, 1], 0)

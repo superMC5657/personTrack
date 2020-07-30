@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-# !@time: 2020/6/10 上午9:27
+# !@time: 2020/7/20 下午7:21
 # !@author: superMC @email: 18758266469@163.com
-# !@fileName: demo.py
+# !@fileName: crop_face_and_sign.py
+
 import os
 
 import cv2
@@ -22,7 +23,7 @@ if __name__ == '__main__':
     # faces, _ = retinaFace_detector(img)
     faces, _ = retinaFace_detector.forward_for_makecsv(img)
     for id, face in enumerate(faces):
+        image_path = os.path.join("data/face_with_name", chr(id + 65) + ".png")
+        cv2.imwrite(image_path, face)
         cv2.imshow('demo', face)
         cv2.waitKey(0)
-    # features = faceModel(faces)
-    # print(features)
