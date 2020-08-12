@@ -3,12 +3,13 @@
 # !@author: superMC @email: 18758266469@163.com
 # !@fileName: video.py
 import time
-
+import numpy as np
 import cv2
 import torch
 from torch.backends import cudnn
 from torchreid.utils import FeatureExtractor
 
+from config import opt
 from fid.insightFace.faceNet import FaceNet
 from fid.mtcnn.mtcnn import MTCNN
 from fid.retinaFace.detector import Detector as RetinaFace
@@ -21,16 +22,8 @@ torch.set_grad_enabled(False)
 
 
 def main():
-    yolo = YoloV5()
-    reid = FeatureExtractor(
-        model_name='osnet_x1_0',
-        model_path='pid/deep_person_reid/checkpoints/osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth',
-        verbose=False)
-    detector = RetinaFace(image_size=(720, 1280))
-    # detector = MTCNN()
-    faceNet = FaceNet()
     person_cache = []
-    cap = cv2.VideoCapture('data/1080p.mp4')
+    cap = cv2.VideoCapture('data/data1.avi')
     fps = cap.get(cv2.CAP_PROP_FPS)
     speed = 1
     size = (
@@ -42,12 +35,20 @@ def main():
         "data/output.avi",
         cv2.VideoWriter_fourcc(*'MJPG'),  # 编码器
         fps / speed,
-        size
+        (size[0] + opt.wight_padding, size[1])
     )
     frame_num = 0
     index = 0
     compress_time = 1000
     vis = True
+    yolo = YoloV5()
+    reid = FeatureExtractor(
+        model_name='osnet_x1_0',
+        model_path='pid/deep_person_reid/checkpoints/osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth',
+        verbose=False)
+    detector = RetinaFace(image_size=(size[1], size[0]))
+    # detector = MTCNN()
+    faceNet = FaceNet()
     while cap.isOpened():
         start_time = time.time()  # start time of the loop
         frame_num += 1
@@ -57,7 +58,8 @@ def main():
 
         if not ret:
             break
-
+        wight_board = np.zeros((size[1], opt.wight_padding, 3), dtype=np.uint8)
+        image = np.concatenate((frame, wight_board), axis=1)
         person_images, person_boxes = yolo(frame)
         if person_boxes:
             face_features, face_boxes = None, None
@@ -67,18 +69,18 @@ def main():
                 face_features = faceNet(face_images)
             cur_person_dict = generate_person(person_features, person_boxes, face_features, face_boxes)
             person_cache, cur_person_dict, index = update_person(index, person_cache, cur_person_dict)
-            frame = plot_boxes(frame, cur_person_dict, fps)
+            image = plot_boxes(image, cur_person_dict, fps)
 
         if frame_num % compress_time == 0:
             person_cache = compression_person(person_cache)
-            
+
         # q键退出
         if vis:
-            cv2.imshow('frame', frame)
+            cv2.imshow('frame', image)
             k = cv2.waitKey(1)
             if k & 0xff == ord('q'):
                 break
-        videoWriter.write(frame)
+        videoWriter.write(image)
         if frame_num % (10 * speed) == 0:
             print("FPS: ", 1.0 / (time.time() - start_time))  # FPS = 1 / time to process loop
 

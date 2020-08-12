@@ -2,10 +2,10 @@
 # !@time: 2020/6/10 上午10:59
 # !@author: superMC @email: 18758266469@163.com
 # !@fileName: image_tool.py
-import random
 
 import cv2
 
+from config import opt
 from self_utils.utils import colors
 
 
@@ -68,5 +68,6 @@ def plot_boxes(image, persons, fps=25):
                     cv2.FONT_HERSHEY_SIMPLEX, scale, color)
 
         cv2.putText(image, str(persons[i].id) + " " + persons[i].name + " " + str(int(persons[i].fps_num / fps)),
-                    (5, im_height - 20 * (i + 1)), cv2.FONT_HERSHEY_SIMPLEX, scale, color)
+                    (im_width - opt.wight_padding + 5, im_height - 20 * persons[i].id), cv2.FONT_HERSHEY_SIMPLEX, scale,
+                    color)
     return image

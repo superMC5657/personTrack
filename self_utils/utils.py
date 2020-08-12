@@ -20,7 +20,7 @@ def get_data(csv_path):
     return labels, features
 
 
-def distance(embeddings1, embeddings2, distance_metric=2):
+def one_distance(embeddings1, embeddings2, distance_metric=2):
     if distance_metric == 0:
         # Euclidian distance
         embeddings1 = embeddings1 / np.linalg.norm(embeddings1, axis=1, keepdims=True)
@@ -43,6 +43,13 @@ def distance(embeddings1, embeddings2, distance_metric=2):
     return dist
 
 
+def self_compute_distance_matrix(face_features, database_features, distance_metric=2):
+    cost_matrix = np.zeros((len(face_features), len(database_features)))
+    for i, face_feature in enumerate(face_features):
+        cost_matrix[i] = one_distance(face_feature, database_features, distance_metric=distance_metric)
+    return cost_matrix
+
+
 def tonumpy(data):
     if isinstance(data, np.ndarray):
         return data
@@ -53,6 +60,7 @@ def tonumpy(data):
 def get_color(max_size=100):
     colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(max_size)]
     return colors
+
 
 
 colors = get_color()

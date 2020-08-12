@@ -7,8 +7,9 @@ import torch
 from sklearn.utils.linear_assignment_ import linear_assignment
 from torchreid.metrics import compute_distance_matrix
 from config import opt
-from self_utils.person import Person
+from self_utils.person import Person, database_features, database_labels
 from self_utils.image_tool import person_face_cost
+from self_utils.utils import self_compute_distance_matrix
 
 
 def compute_cost_matrix(person_boxes, face_boxes):
@@ -27,23 +28,30 @@ def combine_pid(persons):
     return pids
 
 
-def generate_person(person_features, person_boxes, face_features=None, face_boxes=None, threashold=0.5):
+def generate_person(person_features, person_boxes, face_features=None, face_boxes=None, threshold=opt.threshold,
+                    face_threashold=opt.face_threshold):
     # face_list = [_ for _ in range(len(face_boxes))]
     # person_list = [_ for _ in range(len(person_boxes))]
     cur_person_dict = [Person(person_features[i], person_boxes[i]) for i in range(len(person_boxes))]
-    if face_boxes is not None:
+    face_names = ['UnKnown' for _ in range(len(face_boxes))]
+    if face_names:
         # print("faces:{}, persons:{}".format(len(face_boxes), len(person_boxes)))
+        face_cost_matrix = self_compute_distance_matrix(face_features, database_features, distance_metric=2)
+        face_matches = linear_assignment(face_cost_matrix)
+        for i in range(len(face_matches)):
+            a, b = face_matches[i]
+            if face_cost_matrix[a][b] < face_threashold:
+                face_names[a] = database_labels[b]
         cost_matrix = compute_cost_matrix(person_boxes, face_boxes)
         matches = linear_assignment(cost_matrix)
         for i in range(len(matches)):
             a, b = matches[i]
-            if cost_matrix[a][b] < threashold:
+            if cost_matrix[a][b] < threshold:
                 # person_list.remove(a)
                 # face_list.remove(b)
                 cur_person_dict[a].fBox = face_boxes[b]
                 cur_person_dict[a].fid = face_features[b]
-                cur_person_dict[a].findOut_name()
-
+                cur_person_dict[a].name = face_names[b]
     return cur_person_dict
 
 
