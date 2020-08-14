@@ -7,7 +7,7 @@ import torch
 from sklearn.utils.linear_assignment_ import linear_assignment
 from torchreid.metrics import compute_distance_matrix
 from config import opt
-from self_utils.person import Person, database_features, database_labels
+from self_utils.person import Person, database_features, database_labels, Person_Cache
 from self_utils.image_tool import person_face_cost
 from self_utils.utils import self_compute_distance_matrix
 
@@ -20,10 +20,10 @@ def compute_cost_matrix(person_boxes, face_boxes):
     return cost_matrix
 
 
-def combine_pid(persons):
-    num = len(persons)
+def combine_cur_pid(person_current):
+    num = len(person_current)
     pids = torch.zeros((num, 512))
-    for index, person in enumerate(persons):
+    for index, person in enumerate(person_current):
         pids[index] = person.pid
     return pids
 
@@ -32,7 +32,7 @@ def generate_person(person_features, person_boxes, face_features=None, face_boxe
                     face_threashold=opt.face_threshold):
     # face_list = [_ for _ in range(len(face_boxes))]
     # person_list = [_ for _ in range(len(person_boxes))]
-    cur_person_dict = [Person(person_features[i], person_boxes[i]) for i in range(len(person_boxes))]
+    person_current = [Person(person_features[i], person_boxes[i]) for i in range(len(person_boxes))]
     face_names = ['UnKnown' for _ in range(len(face_boxes))]
     if face_names:
         # print("faces:{}, persons:{}".format(len(face_boxes), len(person_boxes)))
@@ -49,45 +49,82 @@ def generate_person(person_features, person_boxes, face_features=None, face_boxe
             if cost_matrix[a][b] < threshold:
                 # person_list.remove(a)
                 # face_list.remove(b)
-                cur_person_dict[a].fBox = face_boxes[b]
-                cur_person_dict[a].fid = face_features[b]
-                cur_person_dict[a].name = face_names[b]
-    return cur_person_dict
+                person_current[a].fBox = face_boxes[b]
+                person_current[a].fid = face_features[b]
+                person_current[a].name = face_names[b]
+    return person_current
+
+
+def combine_cache_pid(person_caches):
+    num = len(person_caches)
+    pids = torch.zeros((num * opt.cache_len, 512))
+    if opt.cache_len == opt.pid_cache_maxLen:
+        for index, person in enumerate(person_caches):
+            pids[index * opt.cache_len:
+                 (index + 1) * opt.cache_len, :] = person.pid_caches
+    else:
+        for index, person in enumerate(person_caches):
+            pids[index * opt.cache_len:
+                 (index + 1) * opt.cache_len - 1, :] = person.pid_caches
+            pids[(index + 1) * opt.cache_len - 1, :] = person.pid
+    return pids
+
+
+def compress_cost_matrix(cost_matrix):
+    person_current_num = cost_matrix.shape[0]
+    person_caches_num = int(cost_matrix.shape[1] / opt.cache_len)
+    compressed_cost_matrix = torch.zeros((person_current_num, person_caches_num))
+    for i in range(person_current_num):
+        for j in range(person_caches_num):
+            compressed_cost_matrix[i, j] = min(
+                cost_matrix[i, j * opt.cache_len:(j + 1) * opt.cache_len])
+    return compressed_cost_matrix
 
 
 # 通过person reid 更新person
-def update_person(index, person_cache: list, cur_person_dict, metric='euclidean',
+def update_person(person_id, person_current, person_caches, metric='euclidean',
                   person_threshold=opt.person_threshold):
-    # cost_matrix = pw.pairwise_distances(combine_pid(person_cache), combine_pid(cur_person_dict))
+    # cost_matrix = pw.pairwise_distances(combine_pid(person_cache), combine_pid(person_current))
     # 当cache不存在时
-    if not person_cache:
-        for person in cur_person_dict:
-            index += 1
-            person.id = index
-            person_cache.append(person)
-        return person_cache, person_cache, index
+    if not person_caches:
+        for person in person_current:
+            person_id += 1
+            person.id = person_id
+            person_caches.append(Person_Cache(person))
+        return person_current, person_caches, person_id
+
     else:
-        cost_matrix = compute_distance_matrix(combine_pid(cur_person_dict), combine_pid(person_cache), metric=metric)
+        cost_matrix = compute_distance_matrix(combine_cur_pid(person_current), combine_cache_pid(person_caches),
+                                              metric=metric)
+        cost_matrix = compress_cost_matrix(cost_matrix)
         matches = linear_assignment(cost_matrix)
-        cur_person_dict_notFound = [i for i in range(len(cur_person_dict))]
+        cur_person_dict_notFound = [i for i in range(len(person_current))]
         for i in range(len(matches)):
             a, b = matches[i]
             if cost_matrix[a][b] < person_threshold:
                 cur_person_dict_notFound.remove(a)
-                cur_person_dict[a].id = person_cache[b].id
-                if cur_person_dict[a].name is "UnKnown" and person_cache[b].name is not "UnKnown":
-                    cur_person_dict[a].name = person_cache[b].name
-                cur_person_dict[a].fps_num = person_cache[b].fps_num
-                person_cache[b] = cur_person_dict[a]
-                person_cache[b].fps_num += 1
+                person_current[a].id = person_caches[b].id
+                if person_current[a].name is "UnKnown" and person_caches[b].name is not "UnKnown":
+                    person_current[a].name = person_caches[b].name
+                person_caches[b].fps_num += 1
+                person_current[a].fps_num = person_caches[b].fps_num
+                person_caches[b].update_all(person_current[a])
 
         # 没找到匹配时
         for i in cur_person_dict_notFound:
-            index += 1
-            cur_person_dict[i].id = index
-            person_cache.append(cur_person_dict[i])
+            person_id += 1
+            person_current[i].id = person_id
+            person_caches.append(Person_Cache(person_current[i]))
 
-        return person_cache, cur_person_dict, index
+        return person_current, person_caches, person_id
+
+
+def update_person_caches():
+    pass
+
+
+def update_person_current():
+    pass
 
 
 def compression_person(person_cache):

@@ -11,6 +11,10 @@ class Config:
     threshold = 0.5
     wight_padding = 250
     compress_time = 1000
+    pid_cache_maxLen = 10
+    cache_len = 10  # 上一帧
+    pid_stride = 3  # 1 frame per save
+
     def parse(self, kwargs):
         state_dict = self.state_dict()
         for k, v in kwargs.items():

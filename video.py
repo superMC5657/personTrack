@@ -39,7 +39,7 @@ def main():
     )
     frame_num = 0
     index = 0
-    vis = False
+    vis = True
     yolo = YoloV5()
     reid = FeatureExtractor(
         model_name='osnet_x1_0',
@@ -66,9 +66,9 @@ def main():
             face_images, face_boxes = detector(frame)
             if len(face_boxes) > 0:
                 face_features = faceNet(face_images)
-            cur_person_dict = generate_person(person_features, person_boxes, face_features, face_boxes)
-            person_cache, cur_person_dict, index = update_person(index, person_cache, cur_person_dict)
-            image = plot_boxes(image, cur_person_dict, fps / speed)
+            person_current = generate_person(person_features, person_boxes, face_features, face_boxes)
+            person_current, person_cache, index = update_person(index, person_current, person_cache)
+            image = plot_boxes(image, person_current, fps / speed)
 
         if frame_num * speed % opt.compress_time == 0:
             person_cache = compression_person(person_cache)
