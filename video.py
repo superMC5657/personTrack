@@ -39,8 +39,7 @@ def main():
     )
     frame_num = 0
     index = 0
-    compress_time = 1000
-    vis = True
+    vis = False
     yolo = YoloV5()
     reid = FeatureExtractor(
         model_name='osnet_x1_0',
@@ -69,9 +68,9 @@ def main():
                 face_features = faceNet(face_images)
             cur_person_dict = generate_person(person_features, person_boxes, face_features, face_boxes)
             person_cache, cur_person_dict, index = update_person(index, person_cache, cur_person_dict)
-            image = plot_boxes(image, cur_person_dict, fps)
+            image = plot_boxes(image, cur_person_dict, fps / speed)
 
-        if frame_num % compress_time == 0:
+        if frame_num * speed % opt.compress_time == 0:
             person_cache = compression_person(person_cache)
 
         # q键退出
@@ -83,10 +82,20 @@ def main():
         videoWriter.write(image)
         if frame_num % (10 * speed) == 0:
             print("FPS: ", 1.0 / (time.time() - start_time))  # FPS = 1 / time to process loop
-
+    person_cache = compression_person(person_cache)
+    write_person(person_cache, fps / speed)
     cap.release()
     videoWriter.release()
     cv2.destroyAllWindows()
+
+
+def write_person(person_cache, fps):
+    file = open('data/output.txt', "w", encoding='utf-8')
+
+    for person in person_cache:
+        line = str(person.id) + "\t" + person.name + '\t' + str(person.fps_num / fps) + "\n"
+        file.write(line)
+    file.close()
 
 
 if __name__ == '__main__':

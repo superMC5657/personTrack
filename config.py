@@ -6,10 +6,11 @@ from pprint import pprint
 
 
 class Config:
-    person_threshold = 300
+    person_threshold = 200
     face_threshold = 1.2
     threshold = 0.5
     wight_padding = 250
+    compress_time = 1000
     def parse(self, kwargs):
         state_dict = self.state_dict()
         for k, v in kwargs.items():
