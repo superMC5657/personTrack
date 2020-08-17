@@ -88,6 +88,6 @@ def no_detect_one_manImg(img_dir, csv_path,
 
 
 if __name__ == '__main__':
-    # one_manImg('data/seven_person_dataset', 'data/one_man_img.csv')
+    one_manImg('data/seven_person_dataset', 'data/one_man_img.csv')
     one_manImg('data/person_with_name', 'data/one_man_img.csv')
     #no_detect_one_manImg('data/face_with_name', 'data/one_man_img.csv')

@@ -60,7 +60,3 @@ def tonumpy(data):
 def get_color(max_size=100):
     colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(max_size)]
     return colors
-
-
-
-colors = get_color()

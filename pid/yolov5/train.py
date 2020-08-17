@@ -6,7 +6,7 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.tensorboard import SummaryWriter
 
-import test  # import test.py to get mAP after each epoch
+import test  # import chinese_text.py to get mAP after each epoch
 from models.yolo import Model
 from utils.datasets import *
 from utils.utils import *

@@ -15,7 +15,7 @@ from fid.mtcnn.mtcnn import MTCNN
 from fid.retinaFace.detector import Detector as RetinaFace
 from pid.yolov5.yolov5 import YoloV5
 from self_utils.person_utils import generate_person, compression_person, update_person
-from self_utils.image_tool import plot_boxes
+from self_utils.image_tool import plot_boxes, plot_boxes_pil
 
 cudnn.benchmark = True
 torch.set_grad_enabled(False)
@@ -68,7 +68,7 @@ def main():
                 face_features = faceNet(face_images)
             person_current = generate_person(person_features, person_boxes, face_features, face_boxes)
             person_current, person_cache, index = update_person(index, person_current, person_cache)
-            image = plot_boxes(image, person_current, fps / speed)
+            image = plot_boxes_pil(image, person_current, fps / speed)
 
         if frame_num * speed % opt.compress_time == 0:
             person_cache = compression_person(person_cache)
