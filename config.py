@@ -7,10 +7,19 @@ from pprint import pprint
 
 class Config:
     person_threshold = 200
-    face_threshold = 1.2
+    face_threshold = 1.1
+    face_metric = 'euclidean'
+    person_metric = 'euclidean'
     threshold = 0.5
+
     wight_padding = 250
-    compress_time = 1000
+    is_video = True
+    vis = True
+    video_speed = 1
+
+    compress_time = 60
+    record_time = 1
+
     pid_cache_maxLen = 10
     cache_len = 10  # 上一帧
     pid_stride = 3  # 1 frame per save

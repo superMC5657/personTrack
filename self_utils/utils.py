@@ -8,6 +8,8 @@ import pandas as pd
 import numpy as np
 import torch
 
+from config import opt
+
 
 def get_data(csv_path):
     name_features_dataframe = pd.read_csv(csv_path, sep=',')
@@ -16,38 +18,96 @@ def get_data(csv_path):
     features_dataframe = name_features_dataframe[features_name]
     labels = name_dataframe.values
     features = features_dataframe.values
+    features = torch.from_numpy(features).type(dtype=torch.float32)
     labels = np.squeeze(labels).tolist()
     return labels, features
 
 
-def one_distance(embeddings1, embeddings2, distance_metric=2):
-    if distance_metric == 0:
+def self_distance(embeddings1, embeddings2, metric='euclidean'):
+    if metric == 'euclidean_norm':
         # Euclidian distance
         embeddings1 = embeddings1 / np.linalg.norm(embeddings1, axis=1, keepdims=True)
         embeddings2 = embeddings2 / np.linalg.norm(embeddings2, axis=1, keepdims=True)
         diff = np.subtract(embeddings1, embeddings2)
         dist = np.sum(np.square(diff), 1)
-    elif distance_metric == 1:
+    elif metric == 'cosine_norm':
         # Distance based on cosine similarity
         dot = np.sum(np.multiply(embeddings1, embeddings2), axis=1)
         norm = np.linalg.norm(embeddings1, axis=1) * np.linalg.norm(embeddings2, axis=1)
         similarity = dot / norm
         dist = np.arccos(similarity) / math.pi
-    elif distance_metric == 2:
+    elif metric == 'euclidean':
         diff = np.subtract(embeddings1, embeddings2)
         dist = np.sum(np.square(diff), 1)
         return dist
     else:
-        raise 'Undefined distance metric %d' % distance_metric
+        raise 'Undefined distance metric %d' % metric
 
     return dist
 
 
-def self_compute_distance_matrix(face_features, database_features, distance_metric=2):
+def self_compute_distance_matrix(face_features, database_features, metric='euclidean'):
     cost_matrix = np.zeros((len(face_features), len(database_features)))
     for i, face_feature in enumerate(face_features):
-        cost_matrix[i] = one_distance(face_feature, database_features, distance_metric=distance_metric)
+        cost_matrix[i] = self_distance(face_feature, database_features, metric=metric)
     return cost_matrix
+
+
+def compute_cost_matrix(person_boxes, face_boxes):
+    cost_matrix = np.zeros((len(person_boxes), len(face_boxes)))
+    for i, person_box in enumerate(person_boxes):
+        for j, face_box in enumerate(face_boxes):
+            cost_matrix[i][j] = person_face_cost(person_box, face_box)
+    return cost_matrix
+
+
+def compress_cost_matrix(cost_matrix):
+    person_current_num = cost_matrix.shape[0]
+    person_caches_num = int(cost_matrix.shape[1] / opt.cache_len)
+    compressed_cost_matrix = torch.zeros((person_current_num, person_caches_num))
+    for i in range(person_current_num):
+        for j in range(person_caches_num):
+            compressed_cost_matrix[i, j] = min(
+                cost_matrix[i, j * opt.cache_len:(j + 1) * opt.cache_len])
+    return compressed_cost_matrix
+
+
+def combine_cur_pid(person_current):
+    num = len(person_current)
+    pids = torch.zeros((num, 512))
+    for index, person in enumerate(person_current):
+        pids[index] = person.pid
+    return pids
+
+
+def combine_cache_pid(person_caches):
+    num = len(person_caches)
+    pids = torch.zeros((num * opt.cache_len, 512))
+    if opt.cache_len == opt.pid_cache_maxLen:
+        for index, person in enumerate(person_caches):
+            pids[index * opt.cache_len:
+                 (index + 1) * opt.cache_len, :] = person.pid_caches
+    else:
+        for index, person in enumerate(person_caches):
+            pids[index * opt.cache_len:
+                 (index + 1) * opt.cache_len - 1, :] = person.pid_caches
+            pids[(index + 1) * opt.cache_len - 1, :] = person.pid
+    return pids
+
+
+# box1 face box2 person
+def person_face_cost(person_box, face_box):
+    # print('iou box1:', box1)
+    # print('iou box2:', box2)
+    ix1 = max(person_box[0], face_box[0])
+    ix2 = min(person_box[2], face_box[2])
+    iy1 = max(person_box[1], face_box[1])
+    iy2 = min(person_box[3], face_box[3])
+    iw = max(0, (ix2 - ix1))
+    ih = max(0, (iy2 - iy1))
+    iarea = iw * ih
+    area1 = (face_box[2] - face_box[0]) * (face_box[3] - face_box[1])
+    return 1 - (iarea / area1)
 
 
 def tonumpy(data):
@@ -60,3 +120,11 @@ def tonumpy(data):
 def get_color(max_size=100):
     colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(max_size)]
     return colors
+
+
+def compute_time(person_caches, time_step):
+    for i in range(len(person_caches)):
+        if person_caches[i].fps_num > 1:
+            person_caches[i].time += time_step
+        person_caches[i].fps_num = 0
+    return person_caches

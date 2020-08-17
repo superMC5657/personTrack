@@ -5,7 +5,7 @@
 import torch
 
 from config import opt
-from self_utils.face_utils import get_data
+from self_utils.utils import get_data
 
 database_labels, database_features = get_data("data/one_man_img.csv")
 
@@ -20,11 +20,14 @@ class Person(object):
         self.pBox = pBox  # person bbox
         self.fBox = None  # face bbox
         self.fps_num = 1
+        self.time = 0
+        self.fid_distance = opt.face_threshold + 0.1
+        self.fid_min_distance = opt.face_threshold
 
-        self.face_distance = None
-
-    def update_name(self):
-        pass
+    def update_all(self, person_cache):
+        self.id = person_cache.id
+        self.fps_num = person_cache.fps_num + 1
+        self.time = person_cache.time
 
 
 class Person_Cache:
@@ -33,10 +36,12 @@ class Person_Cache:
         self.name = None
         self.fps_num = None
         self.pid = None
+        self.time = 0
         self.replace_index = 0
         self.pid_caches = torch.zeros((opt.pid_cache_maxLen, 512))
-        self.fid_min_distance = None  # (name,min distance)
+        self.fid_min_distance = opt.face_threshold  # (name,min distance)
         self.update_base(person)
+        self.name = person.name
         self.update_pid_caches(person)
 
     def update_pid_caches(self, person):
@@ -47,7 +52,6 @@ class Person_Cache:
 
     def update_base(self, person):
         self.id = person.id
-        self.name = person.name
         self.fps_num = person.fps_num
         self.pid = person.pid
 

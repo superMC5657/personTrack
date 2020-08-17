@@ -67,10 +67,11 @@ class FaceNet:
         images = torch.stack(images, dim=0)
         if self.use_cuda:
             images = images.cuda()
-        normal_features = []
 
         features = self.model(images)
-        for i in range(0, len(features), 2):
+        features_len = len(features)
+        normal_features = torch.zeros((features_len // 2, features.shape[1]))
+        for i in range(0, features_len, 2):
             normal_feature = (features[i] + features[i + 1])
-            normal_features.append(l2_norm(normal_feature).cpu().detach().numpy())
+            normal_features[i // 2, :] = l2_norm(normal_feature).cpu().detach()
         return normal_features

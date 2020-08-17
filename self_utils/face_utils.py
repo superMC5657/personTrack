@@ -9,13 +9,13 @@ import numpy as np
 from config import opt
 from fid.demo import FaceNet
 from fid.retinaFace.detector import Detector as RetinaFace
-from self_utils.utils import get_data, one_distance
+from self_utils.utils import get_data, self_distance
 
 
 # 比较csv中的features和传入新人脸的features
 def get_names(new_features, old_features, labels, threshold=opt.face_threshold):
     # distances = pw.pairwise_distances(new_features, old_features, metric)
-    distances = one_distance(new_features, old_features, distance_metric=2)
+    distances = self_distance(new_features, old_features, metric='euclidean')
     names = []
     for i in range(len(new_features)):
         min_distance_index = np.argmin(distances)
