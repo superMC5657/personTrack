@@ -4,9 +4,12 @@
 # !@fileName: utils.py
 import math
 import random
+
+import cv2
 import pandas as pd
 import numpy as np
 import torch
+from moviepy.video.io.VideoFileClip import VideoFileClip
 
 
 def get_data(csv_path):
@@ -60,3 +63,21 @@ def tonumpy(data):
 def get_color(max_size=100):
     colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(max_size)]
     return colors
+
+
+def get_video_duration_movie(src_video):
+    clip = VideoFileClip(src_video)
+    duration = clip.duration
+    clip.close()
+    return duration
+
+
+def get_video_duration_cv2(src_video):
+    """或许更快"""
+    cap = cv2.VideoCapture(src_video)
+    if cap.isOpened():
+        rate = cap.get(5)
+        frame_num = cap.get(7)
+        duration = frame_num / rate
+        return duration
+    return -1
