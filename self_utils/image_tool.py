@@ -74,16 +74,17 @@ def plot_boxes_pil(image, persons, fps=25):
     persons = sorted(persons, key=lambda x: x.id)
     for i in range(len(persons)):
         pBox = persons[i].pBox
-        color = "white"
+        # color = "white"
+        color = colors[persons[i].id]
         draw.rectangle((pBox[0], pBox[1], pBox[2], pBox[3]), outline=color, width=line_width)
         fBox = persons[i].fBox
         if fBox is not None:
             draw.rectangle((fBox[0], fBox[1], fBox[2], fBox[3]), outline=color, width=line_width)
         draw.text((pBox[0] + 5, pBox[3] + 5),
-                  str(persons[i].id) + " " + persons[i].name + " " + str(round(persons[i].fid_min_distance, 2)),
+                  str(persons[i].id) + " " + str(persons[i].name) + " " + str(round(persons[i].fid_min_distance, 2)),
                   fill=color, font=font)
         draw.text((im_width - opt.wight_padding + 5, im_height - 20 * persons[i].id),
-                  str(persons[i].id) + " " + persons[i].name + " " + str(int(persons[i].time)),
+                  str(persons[i].id) + " " + str(persons[i].name) + " " + str(int(persons[i].time)),
                   fill=color, font=font)
     image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
     return image

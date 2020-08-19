@@ -6,13 +6,18 @@ from sklearn.utils.linear_assignment_ import linear_assignment
 from torchreid.metrics import compute_distance_matrix
 
 from config import opt
-from self_utils.person import Person, database_features, database_labels, Person_Cache
+from self_utils.person import Person, Person_Cache
 from self_utils.utils import combine_cur_pid, compress_cost_matrix, compute_cost_matrix, \
-    combine_cache_pid
+    combine_cache_pid, get_data
+
+database_labels, database_features = get_data(opt.face_data_csv)
 
 
 def generate_person(person_features, person_boxes, face_features=None, face_boxes=None, threshold=opt.threshold,
                     face_threashold=opt.face_threshold, metric=opt.face_metric):
+    """
+    根据得到的人脸和人的数据 生成 person 对象
+    """
     # face_list = [_ for _ in range(len(face_boxes))]
     # person_list = [_ for _ in range(len(person_boxes))]
     person_current = [Person(person_features[i], person_boxes[i]) for i in range(len(person_boxes))]
@@ -41,9 +46,11 @@ def generate_person(person_features, person_boxes, face_features=None, face_boxe
     return person_current
 
 
-# 通过person reid 更新person
 def update_person(person_id, person_current, person_caches, metric=opt.person_metric,
                   person_threshold=opt.person_threshold):
+    """
+    通过person reid 更新person
+    """
     # cost_matrix = pw.pairwise_distances(combine_pid(person_cache), combine_pid(person_current))
     # 当cache不存在时
     if not person_caches:

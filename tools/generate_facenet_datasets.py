@@ -55,7 +55,7 @@ def main(args):
 
 
 def parse_arguments(argv):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser("generate_facenet_datasets")
 
     parser.add_argument('input_dir', type=str, help='Directory with raw images.')
     parser.add_argument('output_dir', type=str, help='Directory with face thumbnails.')

@@ -6,18 +6,21 @@
 import os
 
 import cv2
-from torchreid.utils import FeatureExtractor
+import torch
+from torch.backends import cudnn
+
 from pid.yolov4.yolov4 import YoloV4 as Yolo
 
 # from pid.yolov5.yolov5 import YoloV5 as Yolo
-
+cudnn.benchmark = True
+torch.set_grad_enabled(False)
 if __name__ == '__main__':
     import time
 
     yolo = Yolo()
     # model = yolov5_model("pid/yolov5/weights/yolov5l_resave.pt")
 
-    image = cv2.imread("data/aoa.jpg")
+    image = cv2.imread("data/office1.jpg")
     # person_images, _ = detect_person(model, image)
     person_images, _ = yolo(image)
 

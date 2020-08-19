@@ -5,9 +5,6 @@
 import torch
 
 from config import opt
-from self_utils.utils import get_data
-
-database_labels, database_features = get_data("data/one_man_img.csv")
 
 
 class Person(object):

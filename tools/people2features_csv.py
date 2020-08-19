@@ -91,4 +91,4 @@ if __name__ == '__main__':
     # one_manImg('data/seven_person_dataset', 'data/one_man_img.csv')
     # one_manImg('data/person_with_name', 'data/one_man_img.csv')
     # no_detect_one_manImg('data/face_with_name', 'data/one_man_img.csv')
-    one_manImg('/home/supermc/Datasets/databank', 'data/one_man_img.csv')
+    one_manImg('/home/supermc/Datasets/facebank', 'data/one_man_img.csv')

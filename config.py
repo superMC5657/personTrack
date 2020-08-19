@@ -11,17 +11,20 @@ class Config:
     face_metric = 'euclidean'
     person_metric = 'euclidean'
     threshold = 0.5
+    face_data_csv = 'data/1692.csv'
 
-    wight_padding = 250
+    wight_padding = 200
     is_video = True
-    vis = True
+    vis_video = False
+    show_fps = False
     video_speed = 1
 
     compress_time = 60
     record_time = 1
+    callback_time = 1
 
-    pid_cache_maxLen = 10
-    cache_len = 10  # 上一帧
+    pid_cache_maxLen = 10  # pid_caches最大长度
+    cache_len = 10  # 如果cache_len == pid_cache_maxLen 则不使用最后一帧做reid 若果cache_len == pid_cache_maxLen +1 就是使用最后一帧做reid
     pid_stride = 3  # 1 frame per save
 
     def parse(self, kwargs):

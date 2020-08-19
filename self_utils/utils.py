@@ -15,6 +15,9 @@ from config import opt
 
 
 def get_data(csv_path):
+    """
+    从csv中拿出face_features 和labels
+    """
     name_features_dataframe = pd.read_csv(csv_path, sep=',')
     name_dataframe = name_features_dataframe[['Name']]
     features_name = ['Features%d' % i for i in range(512)]
@@ -27,6 +30,9 @@ def get_data(csv_path):
 
 
 def self_distance(embeddings1, embeddings2, metric='euclidean'):
+    """
+    自定义距离
+    """
     if metric == 'euclidean_norm':
         # Euclidian distance
         embeddings1 = embeddings1 / np.linalg.norm(embeddings1, axis=1, keepdims=True)
@@ -50,6 +56,10 @@ def self_distance(embeddings1, embeddings2, metric='euclidean'):
 
 
 def self_compute_distance_matrix(face_features, database_features, metric='euclidean'):
+    """
+    自定义计算features间距离
+    已废弃
+    """
     cost_matrix = np.zeros((len(face_features), len(database_features)))
     for i, face_feature in enumerate(face_features):
         cost_matrix[i] = self_distance(face_feature, database_features, metric=metric)
@@ -57,6 +67,9 @@ def self_compute_distance_matrix(face_features, database_features, metric='eucli
 
 
 def compute_cost_matrix(person_boxes, face_boxes):
+    """
+    计算人脸框和人框的代价
+    """
     cost_matrix = np.zeros((len(person_boxes), len(face_boxes)))
     for i, person_box in enumerate(person_boxes):
         for j, face_box in enumerate(face_boxes):
@@ -65,6 +78,9 @@ def compute_cost_matrix(person_boxes, face_boxes):
 
 
 def compress_cost_matrix(cost_matrix):
+    """
+    因为person_caches用了多个pid 选取最可信的那个
+    """
     person_current_num = cost_matrix.shape[0]
     person_caches_num = int(cost_matrix.shape[1] / opt.cache_len)
     compressed_cost_matrix = torch.zeros((person_current_num, person_caches_num))
@@ -76,6 +92,9 @@ def compress_cost_matrix(cost_matrix):
 
 
 def combine_cur_pid(person_current):
+    """
+    合并person_current 上的pid
+    """
     num = len(person_current)
     pids = torch.zeros((num, 512))
     for index, person in enumerate(person_current):
@@ -84,6 +103,10 @@ def combine_cur_pid(person_current):
 
 
 def combine_cache_pid(person_caches):
+    """
+    合并person_cache上的pid_caches
+    如果cache_len 与 max_maxLen 一致则认为不使用最后一帧的pid 如果相同则使用
+    """
     num = len(person_caches)
     pids = torch.zeros((num * opt.cache_len, 512))
     if opt.cache_len == opt.pid_cache_maxLen:
@@ -98,8 +121,10 @@ def combine_cache_pid(person_caches):
     return pids
 
 
-# box1 face box2 person
 def person_face_cost(person_box, face_box):
+    """
+    设计facebox与personbox的代价 用来匹配人脸和人框
+    """
     # print('iou box1:', box1)
     # print('iou box2:', box2)
     ix1 = max(person_box[0], face_box[0])
@@ -121,14 +146,20 @@ def tonumpy(data):
 
 
 def get_color(max_size=100):
-    colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(max_size)]
+    """因为是黑色面板显示 所以颜色随机区域要亮一点"""
+    colors = [tuple(random.randint(155, 255) for _ in range(3)) for _ in range(max_size)]
     return colors
 
 
-def compute_time(person_caches, time_step):
+def compute_time(person_caches, record_time):
+    """
+    计算时间的方法
+    如果fps_num > 1 认为人record_time时间内存在
+    之后fps_num清零
+    """
     for i in range(len(person_caches)):
         if person_caches[i].fps_num > 1:
-            person_caches[i].time += time_step
+            person_caches[i].time += record_time
         person_caches[i].fps_num = 0
     return person_caches
 
@@ -149,3 +180,12 @@ def get_video_duration_cv2(src_video):
         duration = frame_num / rate
         return duration
     return -1
+
+
+def write_person(person_caches, dst_txt):
+    file = open(dst_txt, "w", encoding='utf-8')
+
+    for person in person_caches:
+        line = str(person.id) + "\t" + str(person.name) + '\t' + str(person.time) + "\n"
+        file.write(line)
+    file.close()

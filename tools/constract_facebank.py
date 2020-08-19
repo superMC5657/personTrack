@@ -2,13 +2,14 @@
 # !@time: 2020/8/17 下午6:15
 # !@author: superMC @email: 18758266469@163.com
 # !@fileName: constract_facebank.py
+import argparse
 import os
 import shutil
 import random
+import sys
 
 
-def random_choice_datasets(input_path="/home/supermc/Datasets/lfw", output_path='/home/supermc/Datasets/databank',
-                           limit=2000):
+def random_choice_datasets(input_path, output_path, limit):
     dir_list = []
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -25,5 +26,19 @@ def random_choice_datasets(input_path="/home/supermc/Datasets/lfw", output_path=
     return dir_list
 
 
+def parse_arguments(argv):
+    parser = argparse.ArgumentParser(description="construct facebank")
+    parser.add_argument('-i', '--input_path', type=str, help="输入数据集路径")
+    parser.add_argument('-o', '--output_path', type=str, help="输出bank路径")
+    parser.add_argument('--limit', type=int, default=1000, help="最大选择图片数量")
+
+    return parser.parse_args(argv)
+
+
+def main(args):
+    random_choice_datasets(args.input_path, args.output_path, args.limit)
+
+
 if __name__ == '__main__':
-    random_choice_datasets()
+    arg = parse_arguments(sys.argv[1:])
+    main(arg)
