@@ -4,9 +4,12 @@
 # !@fileName: utils.py
 import math
 import random
+
+import cv2
 import pandas as pd
 import numpy as np
 import torch
+from moviepy.video.io.VideoFileClip import VideoFileClip
 
 from config import opt
 
@@ -128,3 +131,21 @@ def compute_time(person_caches, time_step):
             person_caches[i].time += time_step
         person_caches[i].fps_num = 0
     return person_caches
+
+
+def get_video_duration_movie(src_video):
+    clip = VideoFileClip(src_video)
+    duration = clip.duration
+    clip.close()
+    return duration
+
+
+def get_video_duration_cv2(src_video):
+    """或许更快"""
+    cap = cv2.VideoCapture(src_video)
+    if cap.isOpened():
+        rate = cap.get(5)
+        frame_num = cap.get(7)
+        duration = frame_num / rate
+        return duration
+    return -1
