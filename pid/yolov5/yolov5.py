@@ -57,7 +57,7 @@ class YoloV5:
             return [], []
         transform_det = scale_coords(img.shape[2:], pred[:, :4], image.shape).round()
         transform_det = transform_det.cpu().detach().numpy()
-        transform_det = transform_det.astype(int).tolist()
+        transform_det = transform_det.astype(int)
         person_images = []
         for xyxy in transform_det:
             person_images.append(crop_box(image, xyxy))

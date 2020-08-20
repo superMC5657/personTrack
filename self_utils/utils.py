@@ -127,7 +127,7 @@ def person_face_cost(person_box, face_box):
     """
     # print('iou box1:', box1)
     # print('iou box2:', box2)
-    ix1 = max(person_box[0], face_box[0])
+    ix1 = max(person_box[0], face_box[0]) 
     ix2 = min(person_box[2], face_box[2])
     iy1 = max(person_box[1], face_box[1])
     iy2 = min(person_box[3], face_box[3])

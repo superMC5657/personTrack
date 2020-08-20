@@ -86,7 +86,7 @@ def video(src_video, dst_video, dst_txt,
         wight_board = np.zeros((video_size[1], opt.wight_padding, 3), dtype=np.uint8)
         image = np.concatenate((frame, wight_board), axis=1)
         person_images, person_boxes = yolo(frame)
-        if person_boxes:
+        if len(person_boxes) > 0:
             face_features, face_boxes = None, None
             person_features = reid(person_images).cpu().detach()
             face_images, face_boxes = detector(frame)

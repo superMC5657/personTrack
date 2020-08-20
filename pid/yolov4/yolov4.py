@@ -28,19 +28,19 @@ class YoloV4:
         rgb_image = cv2.resize(image, (self.model.width, self.model.height))
         rgb_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB)
         boxes = do_detect(self.model, rgb_image, 0.5, 80, 0.4)
-        new_boxes = []
+        width = image.shape[1]
+        height = image.shape[0]
+        new_boxes = np.zeros((len(boxes), 4), dtype=np.int)
         person_images = []
-        for box in boxes:
+        for i, box in enumerate(boxes):
             if box[-1] == 0:
-                width = image.shape[1]
-                height = image.shape[0]
-                new_box = [0] * 4
+                new_box = np.zeros(4, dtype=np.int)
                 new_box[0] = np.maximum(int((box[0] - box[2] / 2.0) * width), 0)
                 new_box[1] = np.maximum(int((box[1] - box[3] / 2.0) * height), 0)
                 new_box[2] = np.minimum(int((box[0] + box[2] / 2.0) * width), width)  # w
                 new_box[3] = np.minimum(int((box[1] + box[3] / 2.0) * height), height)
                 person_images.append(crop_box(image, new_box))
-                new_boxes.append(new_box)
+                new_boxes[i] = new_box
         return person_images, new_boxes
 
 

@@ -8,6 +8,7 @@ from pprint import pprint
 class Config:
     person_threshold = 200
     face_threshold = 1.1
+    filter_face_threshold = 0.3
     face_metric = 'euclidean'
     person_metric = 'euclidean'
     threshold = 0.5
@@ -15,7 +16,7 @@ class Config:
 
     wight_padding = 200
     is_video = True
-    vis_video = False
+    vis_video = True
     show_fps = False
     video_speed = 1
 

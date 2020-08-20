@@ -8,6 +8,8 @@ import os
 
 from torchvision.ops import nms
 import numpy as np
+
+from config import opt
 from self_utils.image_tool import crop_box, change_coord, warp_affine
 from self_utils.utils import tonumpy
 from .data import cfg_mnet, cfg_re50
@@ -145,15 +147,21 @@ class Detector:
         boxes[:, 1] = np.maximum(boxes[:, 1], 0)
         boxes[:, 2] = np.minimum(boxes[:, 2], im_width)  # w
         boxes[:, 3] = np.minimum(boxes[:, 3], im_height)
-
         faces = list()
+        new_boxes = list()
         for box, landm in zip(boxes, landms):
-            face = crop_box(image, box)
             eye_left_x, eye_left_y = change_coord(landm[0], landm[1], box[0], box[1])
             eye_right_x, eye_right_y = change_coord(landm[2], landm[3], box[0], box[1])
-            face = warp_affine(image=face, x1=eye_left_x, y1=eye_left_y, x2=eye_right_x, y2=eye_right_y)
-            faces.append(face)
-        return faces, boxes
+            box_width = box[2] - box[0]
+            eye_width = eye_right_x - eye_left_x
+            if eye_width / box_width > opt.filter_face_threshold:
+                face = crop_box(image, box)
+                face = warp_affine(image=face, x1=eye_left_x, y1=eye_left_y, x2=eye_right_x, y2=eye_right_y)
+                faces.append(face)
+                new_boxes.append(box)
+        if new_boxes:
+            new_boxes = np.vstack(new_boxes).astype(int)
+        return faces, new_boxes
 
     def forward_for_makecsv(self, image):
 
@@ -179,11 +187,11 @@ class Detector:
         img = img.to(self.device)
 
         loc, conf, landms = self.net(img)
-        boxes = decode(loc.data.squeeze(0), self.prior_data, self.cfg['variance'])
+        boxes = decode(loc.detach().squeeze(0), self.prior_data, self.cfg['variance'])
         boxes = boxes * self.scale_box
         boxes = boxes.cpu()
-        scores = conf.squeeze(0).data.cpu()[:, 1]
-        landms = decode_landm(landms.data.squeeze(0), self.prior_data, self.cfg['variance'])
+        scores = conf.squeeze(0).detach().cpu()[:, 1]
+        landms = decode_landm(landms.detach().squeeze(0), self.prior_data, self.cfg['variance'])
         landms = landms * self.scale_landms
         landms = landms.cpu()
 

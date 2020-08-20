@@ -20,7 +20,7 @@ if __name__ == '__main__':
         model_path='pid/deep_person_reid/checkpoints/osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth',
         verbose=False)
 
-    image = cv2.imread("data/aoa.jpg")
+    image = cv2.imread("data/office1.jpg")
     # person_images, _ = detect_person(model, image)
     person_images, _ = yolo(image)
 
