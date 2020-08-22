@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-export PYTHONPATH=$PYTHONPATH:${PWD}
+export PYTHONPATH=${PYTHONPATH}:${PWD}
 echo ${PYTHONPATH}

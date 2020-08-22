@@ -18,9 +18,9 @@ if __name__ == '__main__':
     retinaFace_detector = RetinaFace()
     # mtcnn_detector = MTCNN()
     # faceModel = FaceNet()
-    img = cv2.imread("data/IZTY.png")
+    img = cv2.imread("data/office1.jpg")
     # faces, _ = retinaFace_detector(img)
-    faces, _ = retinaFace_detector.forward_for_makecsv(img)
+    faces, *_ = retinaFace_detector(img, pre=False)
     for id, face in enumerate(faces):
         cv2.imshow('demo', face)
         cv2.waitKey(0)

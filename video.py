@@ -89,10 +89,12 @@ def video(src_video, dst_video, dst_txt,
         if len(person_boxes) > 0:
             face_features, face_boxes = None, None
             person_features = reid(person_images).cpu().detach()
-            face_images, face_boxes = detector(frame)
-            if len(face_boxes) > 0:
+            face_images, face_boxes, face_effective = detector(frame)
+            if face_effective:
                 face_features = faceNet(face_images)
-            person_current = generate_person(person_features, person_boxes, face_features, face_boxes)
+
+            person_current = generate_person(person_features, person_boxes, face_features, face_boxes,
+                                             face_effective)
             person_current, person_caches, person_id = update_person(person_id, person_current, person_caches)
             image = plot_boxes_pil(image, person_current, src_video_fps / video_speed)
 

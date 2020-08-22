@@ -35,15 +35,15 @@ class Person_Cache:
         self.pid = None
         self.time = 0
         self.replace_index = 0
-        self.pid_caches = torch.zeros((opt.pid_cache_maxLen, 512))
+        self.pid_cache_maxLen = opt.pid_cache_maxLen
+        self.pid_caches = torch.zeros((self.pid_cache_maxLen, 512))
         self.fid_min_distance = opt.face_threshold  # (name,min distance)
         self.update_base(person)
         self.name = person.name
         self.update_pid_caches(person)
 
     def update_pid_caches(self, person):
-        self.pid_caches[self.replace_index * opt.pid_cache_maxLen:
-                        (self.replace_index + 1) * opt.pid_cache_maxLen, :] = person.pid
+        self.pid_caches[self.replace_index, :] = person.pid
         self.replace_index += 1
         self.replace_index %= opt.pid_stride
 

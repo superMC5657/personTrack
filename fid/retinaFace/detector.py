@@ -116,7 +116,7 @@ class Detector:
         landms = tonumpy(landms)
         return boxes, landms
 
-    def __call__(self, image):
+    def pre_forward(self, image):
         im_height, im_width, _ = image.shape
         height_resize = im_height / self.image_size[0]
         width_resize = im_width / self.image_size[1]
@@ -147,23 +147,9 @@ class Detector:
         boxes[:, 1] = np.maximum(boxes[:, 1], 0)
         boxes[:, 2] = np.minimum(boxes[:, 2], im_width)  # w
         boxes[:, 3] = np.minimum(boxes[:, 3], im_height)
-        faces = list()
-        new_boxes = list()
-        for box, landm in zip(boxes, landms):
-            eye_left_x, eye_left_y = change_coord(landm[0], landm[1], box[0], box[1])
-            eye_right_x, eye_right_y = change_coord(landm[2], landm[3], box[0], box[1])
-            box_width = box[2] - box[0]
-            eye_width = eye_right_x - eye_left_x
-            if eye_width / box_width > opt.filter_face_threshold:
-                face = crop_box(image, box)
-                face = warp_affine(image=face, x1=eye_left_x, y1=eye_left_y, x2=eye_right_x, y2=eye_right_y)
-                faces.append(face)
-                new_boxes.append(box)
-        if new_boxes:
-            new_boxes = np.vstack(new_boxes).astype(int)
-        return faces, new_boxes
+        return boxes, landms
 
-    def forward_for_makecsv(self, image):
+    def adapt_forward(self, image):
 
         im_height, im_width, _ = image.shape
         image_size = (im_height, im_width)
@@ -202,14 +188,27 @@ class Detector:
         boxes[:, 2] = np.minimum(boxes[:, 2], im_width)  # w
         boxes[:, 3] = np.minimum(boxes[:, 3], im_height)
 
+        return boxes, landms
+
+    def __call__(self, image, pre=True):
+        if pre:
+            boxes, landms = self.pre_forward(image)
+        else:
+            boxes, landms = self.adapt_forward(image)
         faces = list()
-        for box, landm in zip(boxes, landms):
-            face = crop_box(image, box)
+        face_effective = []
+        for index, (box, landm) in enumerate(zip(boxes, landms)):
             eye_left_x, eye_left_y = change_coord(landm[0], landm[1], box[0], box[1])
             eye_right_x, eye_right_y = change_coord(landm[2], landm[3], box[0], box[1])
-            face = warp_affine(image=face, x1=eye_left_x, y1=eye_left_y, x2=eye_right_x, y2=eye_right_y)
-            faces.append(face)
-        return faces, boxes
+            box_width = box[2] - box[0]
+            eye_width = eye_right_x - eye_left_x
+            if eye_width / box_width > opt.filter_face_threshold:
+                face = crop_box(image, box)
+                face = warp_affine(image=face, x1=eye_left_x, y1=eye_left_y, x2=eye_right_x, y2=eye_right_y)
+                faces.append(face)
+                face_effective.append(index)
+        boxes = boxes.astype(int)
+        return faces, boxes, face_effective
 
 
 if __name__ == '__main__':

@@ -21,7 +21,7 @@ if __name__ == '__main__':
     # faceModel = FaceNet()
     img = cv2.imread("data/IZTY.png")
     # faces, _ = retinaFace_detector(img)
-    faces, _ = retinaFace_detector.forward_for_makecsv(img)
+    faces, *_ = retinaFace_detector(img, pre=False)
     for id, face in enumerate(faces):
         image_path = os.path.join("data/face_with_name", chr(id + 65) + ".png")
         cv2.imwrite(image_path, face)

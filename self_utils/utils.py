@@ -6,8 +6,8 @@ import math
 import random
 
 import cv2
-import pandas as pd
 import numpy as np
+import pandas as pd
 import torch
 from moviepy.video.io.VideoFileClip import VideoFileClip
 
@@ -26,6 +26,7 @@ def get_data(csv_path):
     features = features_dataframe.values
     features = torch.from_numpy(features).type(dtype=torch.float32)
     labels = np.squeeze(labels).tolist()
+    print("total_person:", len(labels))
     return labels, features
 
 
@@ -127,7 +128,7 @@ def person_face_cost(person_box, face_box):
     """
     # print('iou box1:', box1)
     # print('iou box2:', box2)
-    ix1 = max(person_box[0], face_box[0]) 
+    ix1 = max(person_box[0], face_box[0])
     ix2 = min(person_box[2], face_box[2])
     iy1 = max(person_box[1], face_box[1])
     iy2 = min(person_box[3], face_box[3])
@@ -145,9 +146,9 @@ def tonumpy(data):
         return data.detach().cpu().numpy()
 
 
-def get_color(max_size=100):
+def get_color(max_size=100, start=100):
     """因为是黑色面板显示 所以颜色随机区域要亮一点"""
-    colors = [tuple(random.randint(155, 255) for _ in range(3)) for _ in range(max_size)]
+    colors = [tuple(random.randint(start, 255) for _ in range(3)) for _ in range(max_size)]
     return colors
 
 
@@ -189,3 +190,13 @@ def write_person(person_caches, dst_txt):
         line = str(person.id) + "\t" + str(person.name) + '\t' + str(person.time) + "\n"
         file.write(line)
     file.close()
+
+
+def filter_matches_between_people_and_face_frames(cost_matrix, filter_num=0.0):
+    """过滤掉一个人框同时出现多个人脸框"""
+    filter_line = []
+    for i in range(cost_matrix.shape[0]):
+        zero_num = np.where(cost_matrix[i, :] == filter_num)[0].shape[0]
+        if zero_num > 1:
+            filter_line.append(i)
+    return filter_line

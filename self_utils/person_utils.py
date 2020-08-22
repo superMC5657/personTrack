@@ -4,45 +4,53 @@
 # !@fileName: person_utils.py
 from sklearn.utils.linear_assignment_ import linear_assignment
 from torchreid.metrics import compute_distance_matrix
+import numpy as np
+from torchvision.ops import box_iou
 
 from config import opt
+
 from self_utils.person import Person, Person_Cache
 from self_utils.utils import combine_cur_pid, compress_cost_matrix, compute_cost_matrix, \
-    combine_cache_pid, get_data
+    combine_cache_pid, get_data, filter_matches_between_people_and_face_frames
 
 database_labels, database_features = get_data(opt.face_data_csv)
 
 
-def generate_person(person_features, person_boxes, face_features=None, face_boxes=None, threshold=opt.threshold,
-                    face_threashold=opt.face_threshold, metric=opt.face_metric):
+def generate_person(person_features, person_boxes, face_features=None, face_boxes=None, face_effective=None,
+                    out_face_threshold=opt.out_face_threshold, face_threashold=opt.face_threshold,
+                    metric=opt.face_metric):
     """
     根据得到的人脸和人的数据 生成 person 对象
     """
-    # face_list = [_ for _ in range(len(face_boxes))]
-    # person_list = [_ for _ in range(len(person_boxes))]
+
     person_current = [Person(person_features[i], person_boxes[i]) for i in range(len(person_boxes))]
-    face_names = ['UnKnown' for _ in range(len(face_boxes))]
-    face_distances = [face_threashold + 0.1 for _ in range(len(face_boxes))]
-    if face_names:
-        # print("faces:{}, persons:{}".format(len(face_boxes), len(person_boxes)))
+    if face_effective:
+        face_names = ['UnKnown' for _ in range(len(face_effective))]
+        face_distances = [face_threashold + 0.1 for _ in range(len(face_effective))]
+
         face_cost_matrix = compute_distance_matrix(face_features, database_features, metric=metric)
         face_matches = linear_assignment(face_cost_matrix)
+
         for i in range(len(face_matches)):
             a, b = face_matches[i]
             face_distances[a] = face_cost_matrix[a][b].item()
             if face_cost_matrix[a][b] < face_threashold:
                 face_names[a] = database_labels[b]
+
         cost_matrix = compute_cost_matrix(person_boxes, face_boxes)
+        filter_line = filter_matches_between_people_and_face_frames(cost_matrix)
         matches = linear_assignment(cost_matrix)
+
         for i in range(len(matches)):
             a, b = matches[i]
-            if cost_matrix[a][b] < threshold:
-                # person_list.remove(a)
-                # face_list.remove(b)
+            if a in filter_line:
+                continue
+            if cost_matrix[a][b] <= out_face_threshold and b in face_effective:
+                effective_b = face_effective.index(b)
                 person_current[a].fBox = face_boxes[b]
-                person_current[a].fid = face_features[b]
-                person_current[a].fid_distance = face_distances[b]
-                person_current[a].name = face_names[b]
+                person_current[a].fid = face_features[effective_b]
+                person_current[a].fid_distance = face_distances[effective_b]
+                person_current[a].name = face_names[effective_b]
     return person_current
 
 
@@ -116,3 +124,13 @@ def compression_person(person_cache):
             name_list.append(person.name)
 
     return new_person_cache
+
+
+def filter_person(person_boxes, threshold=opt.filter_person_threshold):
+    ious = box_iou(person_boxes, person_boxes)
+    coincide_index = np.vstack(np.where((ious < 1.0) & (ious >= threshold)))
+    coincide_index = set(np.unique(coincide_index))
+    effective_index = set([i for i in range(person_boxes.shape[0])])
+    effective_index = effective_index - coincide_index
+
+    return effective_index
