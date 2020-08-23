@@ -3,11 +3,12 @@
 # !@author: superMC @email: 18758266469@163.com
 # !@fileName: __init__.py
 import cv2
+import numpy as np
 
 from pid.yolov4.tool.darknet2pytorch import Darknet
 from pid.yolov4.tool.torch_utils import do_detect
-import numpy as np
-from self_utils.image_tool import crop_box
+from self_utils.person_utils import crop_persons
+from self_utils.utils import totensor
 
 
 class YoloV4:
@@ -28,20 +29,19 @@ class YoloV4:
         rgb_image = cv2.resize(image, (self.model.width, self.model.height))
         rgb_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB)
         boxes = do_detect(self.model, rgb_image, 0.5, 80, 0.4)
+        if boxes is None:
+            return [], []
+        boxes = np.vstack(boxes)
+        person_indices = np.where(boxes[:, 6] == 0)[0]
+        boxes = boxes[person_indices]
         width = image.shape[1]
         height = image.shape[0]
-        new_boxes = np.zeros((len(boxes), 4), dtype=np.int)
-        person_images = []
-        for i, box in enumerate(boxes):
-            if box[-1] == 0:
-                new_box = np.zeros(4, dtype=np.int)
-                new_box[0] = np.maximum(int((box[0] - box[2] / 2.0) * width), 0)
-                new_box[1] = np.maximum(int((box[1] - box[3] / 2.0) * height), 0)
-                new_box[2] = np.minimum(int((box[0] + box[2] / 2.0) * width), width)  # w
-                new_box[3] = np.minimum(int((box[1] + box[3] / 2.0) * height), height)
-                person_images.append(crop_box(image, new_box))
-                new_boxes[i] = new_box
-        return person_images, new_boxes
+        new_boxes = np.zeros((boxes.shape[0], 4))
+        new_boxes[:, 0] = np.maximum((boxes[:, 0] - boxes[:, 2] / 2.0) * width, 0)
+        new_boxes[:, 1] = np.maximum((boxes[:, 1] - boxes[:, 3] / 2.0) * height, 0)
+        new_boxes[:, 2] = np.minimum((boxes[:, 0] + boxes[:, 2] / 2.0) * width, width)  # w
+        new_boxes[:, 3] = np.minimum((boxes[:, 1] + boxes[:, 3] / 2.0) * height, height)
+        return crop_persons(image, totensor(new_boxes))
 
 
 if __name__ == '__main__':

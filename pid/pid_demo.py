@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 # !@time: 2020/6/9 上午5:42
 # !@author: superMC @email: 18758266469@163.com
-# !@fileName: demo.py
-import os
+# !@fileName: pid_demo.py
 
 import cv2
 from torchreid.utils import FeatureExtractor
+
 from pid.yolov4.yolov4 import YoloV4 as Yolo
 
-# from pid.yolov5.yolov5 import YoloV5 as Yolo
+#from pid.yolov5.yolov5 import YoloV5 as Yolo
 
 if __name__ == '__main__':
     import time
@@ -21,12 +21,8 @@ if __name__ == '__main__':
 
     image = cv2.imread("data/office1.jpg")
     # person_images, _ = detect_person(model, image)
-    person_images, _ = yolo(image)
-
-    start = time.time()
-    for index, person_image in enumerate(person_images):
-        cv2.imshow('demo', person_image)
-        cv2.waitKey(0)
-    features = reid(person_images)
-    print(features.shape)
-    print(time.time() - start)
+    person_images, person_boxes = yolo(image)
+    for box in person_boxes:
+        image = cv2.rectangle(image, (box[0], box[1]), (box[2], box[3]), (255, 0, 0), 2)
+    cv2.imshow('demo', image)
+    cv2.waitKey(0)

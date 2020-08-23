@@ -2,16 +2,13 @@
 # !@time: 2020/7/12 下午7:43
 # !@author: superMC @email: 18758266469@163.com
 # !@fileName: retinaFace.py
-import cv2
-import torch
 import os
 
-from torch.backends import cudnn
+import cv2
+import torch
 from torchvision.ops import nms
-import numpy as np
 
-from config import opt
-from self_utils.image_tool import crop_box, change_coord, warp_affine
+from self_utils.face_utils import crop_faces
 from self_utils.utils import tonumpy
 from .data import cfg_mnet, cfg_re50
 from .layers.functions.prior_box import PriorBox
@@ -120,8 +117,8 @@ class Detector:
 
     def pre_forward(self, image):
         im_height, im_width, _ = image.shape
-        height_resize = im_height / self.image_size[0]
-        width_resize = im_width / self.image_size[1]
+        height_resize_scale = im_height / self.image_size[0]
+        width_resize_scale = im_width / self.image_size[1]
         # cv2 resize width,height
         img = cv2.resize(image, (self.image_size[1], self.image_size[0]))
         img = img - (104, 117, 123)
@@ -140,15 +137,11 @@ class Detector:
 
         boxes, landms = self.nonMaximumSuppression(boxes, landms, scores)
 
-        boxes[:, slice(0, 4, 2)] *= width_resize
-        boxes[:, slice(1, 4, 2)] *= height_resize
-        landms[:, slice(0, 10, 2)] *= width_resize
-        landms[:, slice(1, 10, 2)] *= height_resize
+        boxes[:, slice(0, 4, 2)] *= width_resize_scale
+        boxes[:, slice(1, 4, 2)] *= height_resize_scale
+        landms[:, slice(0, 10, 2)] *= width_resize_scale
+        landms[:, slice(1, 10, 2)] *= height_resize_scale
 
-        boxes[:, 0] = np.maximum(boxes[:, 0], 0)
-        boxes[:, 1] = np.maximum(boxes[:, 1], 0)
-        boxes[:, 2] = np.minimum(boxes[:, 2], im_width)  # w
-        boxes[:, 3] = np.minimum(boxes[:, 3], im_height)
         return boxes, landms
 
     def adapt_forward(self, image):
@@ -185,11 +178,6 @@ class Detector:
 
         boxes, landms = self.nonMaximumSuppression(boxes, landms, scores)
 
-        boxes[:, 0] = np.maximum(boxes[:, 0], 0)
-        boxes[:, 1] = np.maximum(boxes[:, 1], 0)
-        boxes[:, 2] = np.minimum(boxes[:, 2], im_width)  # w
-        boxes[:, 3] = np.minimum(boxes[:, 3], im_height)
-
         return boxes, landms
 
     def __call__(self, image):
@@ -197,18 +185,4 @@ class Detector:
             boxes, landms = self.pre_forward(image)
         else:
             boxes, landms = self.adapt_forward(image)
-        faces = list()
-        face_effective = []
-        for index, (box, landm) in enumerate(zip(boxes, landms)):
-            eye_left_x, eye_left_y = change_coord(landm[0], landm[1], box[0], box[1])
-            eye_right_x, eye_right_y = change_coord(landm[2], landm[3], box[0], box[1])
-            box_width = box[2] - box[0]
-            eye_width = eye_right_x - eye_left_x
-            if eye_width / box_width > opt.filter_face_threshold:
-                face = crop_box(image, box)
-                face = warp_affine(image=face, x1=eye_left_x, y1=eye_left_y, x2=eye_right_x, y2=eye_right_y)
-                faces.append(face)
-                face_effective.append(index)
-        boxes = boxes.astype(int)
-        return faces, boxes, face_effective
-
+        return crop_faces(image, boxes, landms)

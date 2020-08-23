@@ -2,98 +2,15 @@
 # !@time: 2020/6/28 下午4:03
 # !@author: superMC @email: 18758266469@163.com
 # !@fileName: person_utils.py
-from sklearn.utils.linear_assignment_ import linear_assignment
-from torchreid.metrics import compute_distance_matrix
 import numpy as np
+import torch
 from torchvision.ops import box_iou
 
 from config import opt
-
-from self_utils.person import Person, Person_Cache
-from self_utils.utils import combine_cur_pid, compress_cost_matrix, compute_cost_matrix, \
-    combine_cache_pid, get_data, filter_matches_between_people_and_face_frames
+from self_utils.utils import get_data, crop_box
 
 database_labels, database_features = get_data(opt.face_data_csv)
 
-
-def generate_person(person_features, person_boxes, face_features=None, face_boxes=None, face_effective=None,
-                    out_face_threshold=opt.out_face_threshold, face_threashold=opt.face_threshold,
-                    metric=opt.face_metric):
-    """
-    根据得到的人脸和人的数据 生成 person 对象
-    """
-
-    person_current = [Person(person_features[i], person_boxes[i]) for i in range(len(person_boxes))]
-    if face_effective:
-        face_names = ['UnKnown' for _ in range(len(face_effective))]
-        face_distances = [face_threashold + 0.1 for _ in range(len(face_effective))]
-
-        face_cost_matrix = compute_distance_matrix(face_features, database_features, metric=metric)
-        face_matches = linear_assignment(face_cost_matrix)
-
-        for i in range(len(face_matches)):
-            a, b = face_matches[i]
-            face_distances[a] = face_cost_matrix[a][b].item()
-            if face_cost_matrix[a][b] < face_threashold:
-                face_names[a] = database_labels[b]
-
-        cost_matrix = compute_cost_matrix(person_boxes, face_boxes)
-        filter_line = filter_matches_between_people_and_face_frames(cost_matrix)
-        matches = linear_assignment(cost_matrix)
-
-        for i in range(len(matches)):
-            a, b = matches[i]
-            if a in filter_line:
-                continue
-            if cost_matrix[a][b] <= out_face_threshold and b in face_effective:
-                effective_b = face_effective.index(b)
-                person_current[a].fBox = face_boxes[b]
-                person_current[a].fid = face_features[effective_b]
-                person_current[a].fid_distance = face_distances[effective_b]
-                person_current[a].name = face_names[effective_b]
-    return person_current
-
-
-def update_person(person_id, person_current, person_caches, metric=opt.person_metric,
-                  person_threshold=opt.person_threshold):
-    """
-    通过person reid 更新person
-    """
-    # cost_matrix = pw.pairwise_distances(combine_pid(person_cache), combine_pid(person_current))
-    # 当cache不存在时
-    if not person_caches:
-        for person in person_current:
-            person_id += 1
-            person.id = person_id
-            person_caches.append(Person_Cache(person))
-        return person_current, person_caches, person_id
-
-    else:
-        cost_matrix = compute_distance_matrix(combine_cur_pid(person_current), combine_cache_pid(person_caches),
-                                              metric=metric)
-        cost_matrix = compress_cost_matrix(cost_matrix)
-        matches = linear_assignment(cost_matrix)
-        cur_person_dict_notFound = [i for i in range(len(person_current))]
-        for i in range(len(matches)):
-            a, b = matches[i]
-            if cost_matrix[a][b] < person_threshold:
-                cur_person_dict_notFound.remove(a)
-                person_current[a].update_all(person_caches[b])
-                if person_current[a].fid_distance <= person_caches[b].fid_min_distance:
-                    person_caches[b].name = person_current[a].name
-                    person_caches[b].fid_min_distance = person_current[a].fid_distance
-                else:
-                    person_current[a].name = person_caches[b].name
-                person_current[a].fid_min_distance = person_caches[b].fid_min_distance
-                person_caches[b].update_all(person_current[a])
-
-        # 没找到匹配时
-        for i in cur_person_dict_notFound:
-            person_id += 1
-            person_current[i].id = person_id
-            person_caches.append(Person_Cache(person_current[i]))
-
-        return person_current, person_caches, person_id
 
 def compression_person(person_cache):
     """
@@ -125,3 +42,97 @@ def filter_person(person_boxes, threshold=opt.filter_person_threshold):
     effective_index = effective_index - coincide_index
 
     return np.array(list(effective_index))
+
+
+def filter_matches_between_people_and_face_frames(cost_matrix, filter_num=0.0):
+    """过滤掉一个人框同时出现多个人脸框"""
+    filter_line = []
+    for i in range(cost_matrix.shape[0]):
+        zero_num = np.where(cost_matrix[i, :] == filter_num)[0].shape[0]
+        if zero_num > 1:
+            filter_line.append(i)
+    return filter_line
+
+
+def compute_cost_matrix(person_boxes, face_boxes):
+    """
+    计算人脸框和人框的代价
+    """
+    cost_matrix = np.zeros((len(person_boxes), len(face_boxes)))
+    for i, person_box in enumerate(person_boxes):
+        for j, face_box in enumerate(face_boxes):
+            cost_matrix[i][j] = person_face_cost(person_box, face_box)
+    return cost_matrix
+
+
+def compress_cost_matrix(cost_matrix):
+    """
+    因为person_caches用了多个pid 选取最可信的那个
+    """
+    person_current_num = cost_matrix.shape[0]
+    person_caches_num = int(cost_matrix.shape[1] / opt.cache_len)
+    compressed_cost_matrix = torch.zeros((person_current_num, person_caches_num))
+    for i in range(person_current_num):
+        for j in range(person_caches_num):
+            compressed_cost_matrix[i, j] = min(
+                cost_matrix[i, j * opt.cache_len:(j + 1) * opt.cache_len])
+    return compressed_cost_matrix
+
+
+def combine_cur_pid(person_current):
+    """
+    合并person_current 上的pid
+    """
+    num = len(person_current)
+    pids = torch.zeros((num, 512))
+    for index, person in enumerate(person_current):
+        pids[index] = person.pid
+    return pids
+
+
+def combine_cache_pid(person_caches):
+    """
+    合并person_cache上的pid_caches
+    如果cache_len 与 max_maxLen 一致则认为不使用最后一帧的pid 如果相同则使用
+    """
+    num = len(person_caches)
+    pids = torch.zeros((num * opt.cache_len, 512))
+    if opt.cache_len == opt.pid_cache_maxLen:
+        for index, person in enumerate(person_caches):
+            pids[index * opt.cache_len:
+                 (index + 1) * opt.cache_len, :] = person.pid_caches
+    else:
+        for index, person in enumerate(person_caches):
+            pids[index * opt.cache_len:
+                 (index + 1) * opt.cache_len - 1, :] = person.pid_caches
+            pids[(index + 1) * opt.cache_len - 1, :] = person.pid
+    return pids
+
+
+def person_face_cost(person_box, face_box):
+    """
+    设计facebox与personbox的代价 用来匹配人脸和人框
+    """
+    # print('iou box1:', box1)
+    # print('iou box2:', box2)
+    ix1 = max(person_box[0], face_box[0])
+    ix2 = min(person_box[2], face_box[2])
+    iy1 = max(person_box[1], face_box[1])
+    iy2 = min(person_box[3], face_box[3])
+    iw = max(0, (ix2 - ix1))
+    ih = max(0, (iy2 - iy1))
+    iarea = iw * ih
+    area1 = (face_box[2] - face_box[0]) * (face_box[3] - face_box[1])
+    return 1 - (iarea / area1)
+
+
+def crop_persons(image, person_boxes):
+    person_effective = filter_person(person_boxes)
+    person_boxes = person_boxes.numpy().astype(int)
+    if len(person_effective) == 0:
+        return [], []
+    person_images = []
+    person_boxes = person_boxes[person_effective]
+    for xyxy in person_boxes:
+        person_images.append(crop_box(image, xyxy))
+    return person_images, person_boxes

@@ -6,20 +6,20 @@ import argparse
 import os
 import sys
 import time
-import numpy as np
+
 import cv2
+import numpy as np
 import torch
-from torch.backends import cudnn
 from torchreid.utils import FeatureExtractor
 
 from config import opt
 from fid.insightFace.faceNet import FaceNet
-from fid.mtcnn.mtcnn import MTCNN
 from fid.retinaFace.detector import Detector as RetinaFace
 from pid.yolov5.yolov5 import YoloV5
 from self_utils.callback_func import callback_progress
-from self_utils.person_utils import generate_person, compression_person, update_person
 from self_utils.image_tool import plot_boxes_pil
+from self_utils.person_tracker import generate_person, update_person
+from self_utils.person_utils import compression_person
 from self_utils.utils import compute_time, write_person, get_video_duration_cv2
 
 torch.set_grad_enabled(False)
@@ -94,7 +94,7 @@ def video(src_video, dst_video, dst_txt,
             person_current = generate_person(person_features, person_boxes, face_features, face_boxes,
                                              face_effective)
             person_current, person_caches, person_id = update_person(person_id, person_current, person_caches)
-            image = plot_boxes_pil(image, person_current, src_video_fps / video_speed)
+            image = plot_boxes_pil(image, person_current)
 
         compress_timing = frame_num * video_speed // fps_compress_time
         if compress_timing - last_compress_timing >= 1:

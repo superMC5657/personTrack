@@ -11,8 +11,6 @@ import pandas as pd
 import torch
 from moviepy.video.io.VideoFileClip import VideoFileClip
 
-from config import opt
-
 
 def get_data(csv_path):
     """
@@ -67,76 +65,12 @@ def self_compute_distance_matrix(face_features, database_features, metric='eucli
     return cost_matrix
 
 
-def compute_cost_matrix(person_boxes, face_boxes):
-    """
-    计算人脸框和人框的代价
-    """
-    cost_matrix = np.zeros((len(person_boxes), len(face_boxes)))
-    for i, person_box in enumerate(person_boxes):
-        for j, face_box in enumerate(face_boxes):
-            cost_matrix[i][j] = person_face_cost(person_box, face_box)
-    return cost_matrix
-
-
-def compress_cost_matrix(cost_matrix):
-    """
-    因为person_caches用了多个pid 选取最可信的那个
-    """
-    person_current_num = cost_matrix.shape[0]
-    person_caches_num = int(cost_matrix.shape[1] / opt.cache_len)
-    compressed_cost_matrix = torch.zeros((person_current_num, person_caches_num))
-    for i in range(person_current_num):
-        for j in range(person_caches_num):
-            compressed_cost_matrix[i, j] = min(
-                cost_matrix[i, j * opt.cache_len:(j + 1) * opt.cache_len])
-    return compressed_cost_matrix
-
-
-def combine_cur_pid(person_current):
-    """
-    合并person_current 上的pid
-    """
-    num = len(person_current)
-    pids = torch.zeros((num, 512))
-    for index, person in enumerate(person_current):
-        pids[index] = person.pid
-    return pids
-
-
-def combine_cache_pid(person_caches):
-    """
-    合并person_cache上的pid_caches
-    如果cache_len 与 max_maxLen 一致则认为不使用最后一帧的pid 如果相同则使用
-    """
-    num = len(person_caches)
-    pids = torch.zeros((num * opt.cache_len, 512))
-    if opt.cache_len == opt.pid_cache_maxLen:
-        for index, person in enumerate(person_caches):
-            pids[index * opt.cache_len:
-                 (index + 1) * opt.cache_len, :] = person.pid_caches
-    else:
-        for index, person in enumerate(person_caches):
-            pids[index * opt.cache_len:
-                 (index + 1) * opt.cache_len - 1, :] = person.pid_caches
-            pids[(index + 1) * opt.cache_len - 1, :] = person.pid
-    return pids
-
-
-def person_face_cost(person_box, face_box):
-    """
-    设计facebox与personbox的代价 用来匹配人脸和人框
-    """
-    # print('iou box1:', box1)
-    # print('iou box2:', box2)
-    ix1 = max(person_box[0], face_box[0])
-    ix2 = min(person_box[2], face_box[2])
-    iy1 = max(person_box[1], face_box[1])
-    iy2 = min(person_box[3], face_box[3])
-    iw = max(0, (ix2 - ix1))
-    ih = max(0, (iy2 - iy1))
-    iarea = iw * ih
-    area1 = (face_box[2] - face_box[0]) * (face_box[3] - face_box[1])
-    return 1 - (iarea / area1)
+def crop_box(image, box):
+    x1 = int(box[0])
+    y1 = int(box[1])
+    x2 = int(box[2])
+    y2 = int(box[3])
+    return image[y1:y2, x1:x2]
 
 
 def tonumpy(data):
@@ -144,6 +78,14 @@ def tonumpy(data):
         return data
     if isinstance(data, torch.Tensor):
         return data.detach().cpu().numpy()
+
+
+def totensor(data):
+    if isinstance(data, np.ndarray):
+        data = torch.from_numpy(data)
+    if isinstance(data, torch.Tensor):
+        data = data.detach()
+    return data
 
 
 def get_color(max_size=100, start=100):
@@ -191,12 +133,3 @@ def write_person(person_caches, dst_txt):
         file.write(line)
     file.close()
 
-
-def filter_matches_between_people_and_face_frames(cost_matrix, filter_num=0.0):
-    """过滤掉一个人框同时出现多个人脸框"""
-    filter_line = []
-    for i in range(cost_matrix.shape[0]):
-        zero_num = np.where(cost_matrix[i, :] == filter_num)[0].shape[0]
-        if zero_num > 1:
-            filter_line.append(i)
-    return filter_line

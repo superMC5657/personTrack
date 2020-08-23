@@ -15,35 +15,7 @@ colors = get_color()
 font = ImageFont.truetype("data/font/HuaWenHeiTi-1.ttf", 15, encoding="utf-8")
 
 
-def crop_box(image, box):
-    x1 = int(box[0])
-    y1 = int(box[1])
-    x2 = int(box[2])
-    y2 = int(box[3])
-    return image[y1:y2, x1:x2]
-
-
-def change_coord(landmark_x, landmark_y, x0, y0):
-    new_landmark_x = landmark_x - x0
-    new_landmark_y = landmark_y - y0
-    return new_landmark_x, new_landmark_y
-
-
-def warp_affine(image, x1, y1, x2, y2, scale=1.0):
-    eye_center = ((x1 + x2) / 2, (y1 + y2) / 2)
-
-    dy = y2 - y1
-    dx = x2 - x1
-    # 计算旋转角度
-    angle = cv2.fastAtan2(dy, dx)
-    rot = cv2.getRotationMatrix2D(eye_center, angle, scale=scale)
-
-    rot_img = cv2.warpAffine(image, rot, dsize=(image.shape[1], image.shape[0]))
-
-    return rot_img
-
-
-def plot_boxes(image, persons, fps=25):
+def plot_boxes(image, persons):
     im_height, im_width, _ = image.shape
     scale = 12
     persons = sorted(persons, key=lambda x: x.id)
@@ -58,13 +30,13 @@ def plot_boxes(image, persons, fps=25):
                              color)
 
         image = ft.draw_text(image,
-                             str(persons[i].id) + " " + persons[i].name + " " + str(int(persons[i].fps_num / fps)),
+                             str(persons[i].id) + " " + persons[i].name + " " + str(int(persons[i].time)),
                              (im_width - opt.wight_padding + 5, im_height - 20 * persons[i].id), scale,
                              color)
     return image
 
 
-def plot_boxes_pil(image, persons, fps=25):
+def plot_boxes_pil(image, persons):
     im_height, im_width, _ = image.shape
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = Image.fromarray(image)
