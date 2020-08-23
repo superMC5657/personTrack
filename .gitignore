@@ -10,6 +10,6 @@
 *__pycache__
 /fid/retinaFace/retinaFace_checkpoints/Resnet50_Final.pth
 
-/pid/deep_sort.py
-/pid/sort/
+
+
 /demo.py
