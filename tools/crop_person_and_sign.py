@@ -7,12 +7,10 @@ import os
 
 import cv2
 import torch
-from torch.backends import cudnn
 
 from pid.yolov4.yolov4 import YoloV4 as Yolo
 
 # from pid.yolov5.yolov5 import YoloV5 as Yolo
-cudnn.benchmark = True
 torch.set_grad_enabled(False)
 if __name__ == '__main__':
     import time

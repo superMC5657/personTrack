@@ -2,7 +2,10 @@
 # !@time: 2020/6/20 上午8:37
 # !@author: superMC @email: 18758266469@163.com
 # !@fileName: yolov5.py
+from torch.backends import cudnn
+
 from self_utils.image_tool import crop_box
+from self_utils.person_utils import filter_person
 
 try:
     from utils.datasets import *
@@ -56,9 +59,13 @@ class YoloV5:
         if pred is None:
             return [], []
         transform_det = scale_coords(img.shape[2:], pred[:, :4], image.shape).round()
-        transform_det = transform_det.cpu().detach().numpy()
-        transform_det = transform_det.astype(int)
+        transform_det = transform_det.cpu().detach()
+        person_effective = filter_person(transform_det)
+        transform_det = transform_det.numpy().astype(int)
+        if len(person_effective) == 0:
+            return [], []
         person_images = []
+        transform_det = transform_det[person_effective]
         for xyxy in transform_det:
             person_images.append(crop_box(image, xyxy))
 

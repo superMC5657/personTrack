@@ -11,13 +11,11 @@ import sys
 import numpy as np
 import cv2
 import torch
-from torch.backends import cudnn
 
 from fid.insightFace.faceNet import FaceNet
 from fid.mtcnn.mtcnn import MTCNN
 from fid.retinaFace.detector import Detector as RetinaFace
 
-cudnn.benchmark = True
 torch.set_grad_enabled(False)
 
 
@@ -26,7 +24,7 @@ def one_manImg(img_dir, csv_path, retinaFace_weight="fid/retinaFace/retinaFace_c
                cache_path='data/cache'):
     if not os.path.exists(cache_path):
         os.makedirs(cache_path)
-    detector = RetinaFace(retinaFace_weight)  # choice mtcnn/retinaFace
+    face_detector = RetinaFace(retinaFace_weight, pre_size=False)  # choice mtcnn/retinaFace
     # detector = MTCNN()
     mobileFace = FaceNet(faceNet_weigt)
     img_paths = os.listdir(img_dir)
@@ -50,7 +48,7 @@ def one_manImg(img_dir, csv_path, retinaFace_weight="fid/retinaFace/retinaFace_c
             else:
                 img_path = os.path.join(img_dir, img_path)
                 image = cv2.imread(img_path)
-                faces, *_ = detector(image, pre=False)
+                faces, *_ = face_detector(image)
                 if len(faces) == 1:
                     print('正在输入:', label)
                     cv2.imwrite(os.path.join(cache_path, os.path.split(img_path)[-1]), faces[0])
@@ -110,15 +108,12 @@ def parse_arguments(argv):
 
 def main(args):
     if args.is_face:
+        torch.backends.cudnn.benchmark = True
         no_detect_one_manImg(args.input_dir, args.csv_path, cache_path=args.cache_path)
     else:
         one_manImg(args.input_dir, args.csv_path, cache_path=args.cache_path)
 
 
 if __name__ == '__main__':
-    # one_manImg('data/seven_person_dataset', 'data/one_man_img.csv')
-    # one_manImg('data/person_with_name', 'data/one_man_img.csv')
-    # no_detect_one_manImg('data/face_with_name', 'data/one_man_img.csv')
-    # one_manImg('/home/supermc/Datasets/facebank', 'data/one_man_img.csv')
     arg = parse_arguments(sys.argv[1:])
     main(arg)

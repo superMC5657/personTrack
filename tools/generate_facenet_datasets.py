@@ -16,7 +16,7 @@ import numpy as np
 
 
 def main(args):
-    faceDetector = RetinaFace()
+    faceDetector = RetinaFace(pre_size=False)
     output_dir = args.output_dir
 
     if not os.path.exists(output_dir):
@@ -39,7 +39,7 @@ def main(args):
             output_filename = os.path.join(output_class_dir, filename + '.png')
             image = cv2.imread(image_path)
             if not os.path.exists(output_filename):
-                faces, *_ = faceDetector(image, pre=False)
+                faces, *_ = faceDetector(image)
                 if len(faces) == 1:
                     if not os.path.exists(output_class_dir):
                         os.makedirs(output_class_dir)

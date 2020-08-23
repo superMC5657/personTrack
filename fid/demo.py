@@ -15,12 +15,12 @@ from fid.retinaFace.detector import Detector as RetinaFace
 cudnn.benchmark = True
 torch.set_grad_enabled(False)
 if __name__ == '__main__':
-    retinaFace_detector = RetinaFace()
+    face_detector = RetinaFace(pre_size=False)
     # mtcnn_detector = MTCNN()
     # faceModel = FaceNet()
     img = cv2.imread("data/office1.jpg")
     # faces, _ = retinaFace_detector(img)
-    faces, *_ = retinaFace_detector(img, pre=False)
+    faces, *_ = face_detector(img)
     for id, face in enumerate(faces):
         cv2.imshow('demo', face)
         cv2.waitKey(0)

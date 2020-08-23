@@ -6,6 +6,7 @@ import cv2
 import torch
 import os
 
+from torch.backends import cudnn
 from torchvision.ops import nms
 import numpy as np
 
@@ -57,11 +58,12 @@ def load_model(model, pretrained_path, load_to_gpu):
 class Detector:
     # image_size = height,width
     def __init__(self, weight="fid/retinaFace/retinaFace_checkpoints/mobilenet0.25_Final.pth", image_size=(480, 640),
-                 use_cuda=1):
+                 use_cuda=1, pre_size=True):
         network = os.path.split(weight)[-1].split("_")[0]
         device = torch.device("cuda" if use_cuda else "cpu")
         self.device = device
         self.cfg = None
+        self.pre_size = pre_size
         if network == "mobilenet0.25":
             self.cfg = cfg_mnet
         elif network == "Resnet50":
@@ -190,8 +192,8 @@ class Detector:
 
         return boxes, landms
 
-    def __call__(self, image, pre=True):
-        if pre:
+    def __call__(self, image):
+        if self.pre_size:
             boxes, landms = self.pre_forward(image)
         else:
             boxes, landms = self.adapt_forward(image)
@@ -210,6 +212,3 @@ class Detector:
         boxes = boxes.astype(int)
         return faces, boxes, face_effective
 
-
-if __name__ == '__main__':
-    detector = Detector()

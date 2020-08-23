@@ -22,7 +22,6 @@ from self_utils.person_utils import generate_person, compression_person, update_
 from self_utils.image_tool import plot_boxes_pil
 from self_utils.utils import compute_time, write_person, get_video_duration_cv2
 
-cudnn.benchmark = True
 torch.set_grad_enabled(False)
 
 
@@ -69,10 +68,9 @@ def video(src_video, dst_video, dst_txt,
         model_name='osnet_x1_0',
         model_path='pid/deep_person_reid/checkpoints/osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth',
         verbose=False)
-    detector = RetinaFace(image_size=(video_size[1], video_size[0]))
+    face_detector = RetinaFace(image_size=(video_size[1], video_size[0]))
     # detector = MTCNN()
     faceNet = FaceNet()
-
     person_caches = []
     while src_video_cap.isOpened():
         start_time = time.time()  # start time of the loop
@@ -89,7 +87,7 @@ def video(src_video, dst_video, dst_txt,
         if len(person_boxes) > 0:
             face_features, face_boxes = None, None
             person_features = reid(person_images).cpu().detach()
-            face_images, face_boxes, face_effective = detector(frame)
+            face_images, face_boxes, face_effective = face_detector(frame)
             if face_effective:
                 face_features = faceNet(face_images)
 
@@ -151,7 +149,9 @@ def parse_arguments(argv):
 
 
 def main(args):
+    start_time = time.time()
     video(args.src_video, args.dst_video, args.dst_txt, callback_progress=callback_progress)
+    print(time.time() - start_time)
 
 
 if __name__ == '__main__':

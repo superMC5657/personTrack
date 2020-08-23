@@ -7,15 +7,16 @@ from pprint import pprint
 
 class Config:
     person_threshold = 200
-    face_threshold = 1.4
+    face_threshold = 1.2
     filter_face_threshold = 0.42  # 人脸偏转幅度
-    filter_person_threshold = 0.2  # person之间的iou
+    filter_person_threshold = 1.0  # person之间的iou
+    out_face_threshold = 0  # 匹配人和人脸的最小代价
+
     face_metric = 'euclidean'
     person_metric = 'euclidean'
-    out_face_threshold = 0
     face_data_csv = 'data/4329.csv'
 
-    wight_padding = 200
+    wight_padding = 220
     is_video = True
     vis_video = True
     show_fps = True

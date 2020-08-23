@@ -95,15 +95,6 @@ def update_person(person_id, person_current, person_caches, metric=opt.person_me
 
         return person_current, person_caches, person_id
 
-
-def update_person_caches():
-    pass
-
-
-def update_person_current():
-    pass
-
-
 def compression_person(person_cache):
     """
     Compress person_cache
@@ -128,9 +119,9 @@ def compression_person(person_cache):
 
 def filter_person(person_boxes, threshold=opt.filter_person_threshold):
     ious = box_iou(person_boxes, person_boxes)
-    coincide_index = np.vstack(np.where((ious < 1.0) & (ious >= threshold)))
+    coincide_index = np.vstack(np.where((ious < 1.0) & (ious > threshold)))
     coincide_index = set(np.unique(coincide_index))
     effective_index = set([i for i in range(person_boxes.shape[0])])
     effective_index = effective_index - coincide_index
 
-    return effective_index
+    return np.array(list(effective_index))
