@@ -56,7 +56,7 @@ class YoloV5:
         if pred is None:
             return [], []
         transform_det = scale_coords(img.shape[2:], pred[:, :4], image.shape).round()
-        transform_det = transform_det.cpu().detach()
+        transform_det = transform_det.cpu().detach().numpy()
         return crop_persons(image, transform_det)
 
 

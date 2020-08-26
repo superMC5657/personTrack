@@ -4,10 +4,9 @@
 # !@fileName: person_utils.py
 import numpy as np
 import torch
-from torchvision.ops import box_iou
-
+import zyan
 from config import opt
-from self_utils.utils import get_data, crop_box
+from self_utils.utils import get_data, crop_box, totensor, tonumpy
 
 database_labels, database_features = get_data(opt.face_data_csv)
 
@@ -35,8 +34,8 @@ def compression_person(person_cache):
 
 
 def filter_person(person_boxes, threshold=opt.filter_person_threshold):
-    ious = box_iou(person_boxes, person_boxes)
-    coincide_index = np.vstack(np.where((ious < 1.0) & (ious > threshold)))
+    cost = person_face_cost_cpp(person_boxes, person_boxes)
+    coincide_index = np.where((cost < 1.0) & (cost > threshold))[1]
     coincide_index = set(np.unique(coincide_index))
     effective_index = set([i for i in range(person_boxes.shape[0])])
     effective_index = effective_index - coincide_index
@@ -54,14 +53,19 @@ def filter_matches_between_people_and_face_frames(cost_matrix, filter_num=0.0):
     return filter_line
 
 
-def compute_cost_matrix(person_boxes, face_boxes):
+def person_face_cost_cpp(person_boxes, face_boxes):
+    cost = zyan.person_face_cost(totensor(person_boxes), totensor(face_boxes))
+    return tonumpy(cost)
+
+
+def person_face_cost(person_boxes, face_boxes):
     """
     计算人脸框和人框的代价
     """
     cost_matrix = np.zeros((len(person_boxes), len(face_boxes)))
     for i, person_box in enumerate(person_boxes):
         for j, face_box in enumerate(face_boxes):
-            cost_matrix[i][j] = person_face_cost(person_box, face_box)
+            cost_matrix[i][j] = self_cost_func(person_box, face_box)
     return cost_matrix
 
 
@@ -109,7 +113,7 @@ def combine_cache_pid(person_caches):
     return pids
 
 
-def person_face_cost(person_box, face_box):
+def self_cost_func(person_box, face_box):
     """
     设计facebox与personbox的代价 用来匹配人脸和人框
     """
@@ -119,16 +123,16 @@ def person_face_cost(person_box, face_box):
     ix2 = min(person_box[2], face_box[2])
     iy1 = max(person_box[1], face_box[1])
     iy2 = min(person_box[3], face_box[3])
-    iw = max(0, (ix2 - ix1))
-    ih = max(0, (iy2 - iy1))
+    iw = max(0, (ix2 - ix1 + 1))
+    ih = max(0, (iy2 - iy1 + 1))
     iarea = iw * ih
-    area1 = (face_box[2] - face_box[0]) * (face_box[3] - face_box[1])
-    return 1 - (iarea / area1)
+    farea = (face_box[2] - face_box[0] + 1) * (face_box[3] - face_box[1] + 1)
+    return iarea / farea
 
 
 def crop_persons(image, person_boxes):
+    person_boxes = person_boxes.astype(np.int32)
     person_effective = filter_person(person_boxes)
-    person_boxes = person_boxes.numpy().astype(int)
     if len(person_effective) == 0:
         return [], []
     person_images = []

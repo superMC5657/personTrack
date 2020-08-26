@@ -41,7 +41,7 @@ class YoloV4:
         new_boxes[:, 1] = np.maximum((boxes[:, 1] - boxes[:, 3] / 2.0) * height, 0)
         new_boxes[:, 2] = np.minimum((boxes[:, 0] + boxes[:, 2] / 2.0) * width, width)  # w
         new_boxes[:, 3] = np.minimum((boxes[:, 1] + boxes[:, 3] / 2.0) * height, height)
-        return crop_persons(image, totensor(new_boxes))
+        return crop_persons(image, new_boxes)
 
 
 if __name__ == '__main__':

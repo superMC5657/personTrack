@@ -7,8 +7,9 @@ from torchreid.metrics import compute_distance_matrix
 
 from config import opt
 from self_utils.person import Person, Person_Cache
-from self_utils.person_utils import database_features, database_labels, compute_cost_matrix, \
-    filter_matches_between_people_and_face_frames, combine_cur_pid, combine_cache_pid, compress_cost_matrix
+from self_utils.person_utils import database_features, database_labels, \
+    filter_matches_between_people_and_face_frames, combine_cur_pid, combine_cache_pid, compress_cost_matrix, \
+    person_face_cost, person_face_cost_cpp
 
 
 def generate_person(person_features, person_boxes, face_features=None, face_boxes=None, face_effective=None,
@@ -32,7 +33,7 @@ def generate_person(person_features, person_boxes, face_features=None, face_boxe
             if face_cost_matrix[a][b] < face_threashold:
                 face_names[a] = database_labels[b]
 
-        cost_matrix = compute_cost_matrix(person_boxes, face_boxes)
+        cost_matrix = 1 - person_face_cost_cpp(person_boxes, face_boxes)
         filter_line = filter_matches_between_people_and_face_frames(cost_matrix)
         matches = linear_assignment(cost_matrix)
 

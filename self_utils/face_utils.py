@@ -48,5 +48,5 @@ def crop_faces(image, boxes, landms):
             face = warp_affine(image=face, x1=eye_left_x, y1=eye_left_y, x2=eye_right_x, y2=eye_right_y)
             faces.append(face)
             face_effective.append(index)
-    boxes = boxes.astype(int)
+    boxes = boxes.astype(np.int32)
     return faces, boxes, face_effective
