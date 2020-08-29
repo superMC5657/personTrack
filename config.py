@@ -8,9 +8,9 @@ from pprint import pprint
 class Config:
     person_threshold = 200  # 越小越严格
     face_threshold = 1.2  # 越小越严格
-    filter_face_threshold = 0.42  # 人脸偏转幅度 越大越严格
-    filter_person_threshold = 0.5  # person之间的iou 越小越严格
-    out_face_threshold = 0.0  # 匹配人和人脸的最小代价 越小越严格
+    filter_face_threshold = 0.42  # 人脸偏转幅度(双眼占比人脸宽度 >阈值生效) 越大越严格
+    filter_person_threshold = 0.5  # 单个person与其他person重合百分比 < 阈值生效 越小越严格
+    out_face_threshold = 0.0  # 人脸和人/人脸 百分比 越小越严格
 
     face_metric = 'euclidean'
     person_metric = 'euclidean'
