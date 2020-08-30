@@ -33,7 +33,7 @@ def video(src_video, dst_video, dst_txt,
         int(src_video_cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
         int(src_video_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     )
-    is_video = opt.is_video  # 是否为视频 (如果实时 代码逻辑会不同 需要靠time模块计时)
+    is_video = 'rtsp' not in src_video  # 是否为视频 (如果实时 代码逻辑会不同 需要靠time模块计时)
     video_speed = opt.video_speed  # 视频播放速度
 
     record_time = opt.record_time  # 计时间隔时间
@@ -54,7 +54,10 @@ def video(src_video, dst_video, dst_txt,
     vis_video = opt.vis_video  # 是否可视化
     show_fps = opt.show_fps  # 是否反馈fps
 
-    video_total_time = get_video_duration_cv2(src_video)
+    if video_speed >= src_video_fps * min(record_time, callback_time, compress_time):
+        print("fatal error")
+    if is_video:
+        video_total_time = get_video_duration_cv2(src_video)
     if dst_video:
         videoWriter = cv2.VideoWriter(
             dst_video,
@@ -72,8 +75,11 @@ def video(src_video, dst_video, dst_txt,
     # detector = MTCNN()
     faceNet = FaceNet()
     person_caches = []
+
+    start_time = time.time()
+    fps_time_t_1 = start_time
     while src_video_cap.isOpened():
-        start_time = time.time()  # start time of the loop
+
         frame_num += 1
         ret, frame = src_video_cap.read()
         if frame_num % video_speed != 0:
@@ -96,25 +102,30 @@ def video(src_video, dst_video, dst_txt,
             person_current, person_caches, person_id = update_person(person_id, person_current, person_caches)
             image = plot_boxes_pil(image, person_current)
 
-        compress_timing = frame_num * video_speed // fps_compress_time
+        if is_video:
+            record_timing = frame_num // fps_record_time
+            compress_timing = frame_num // fps_compress_time
+
+        else:
+            time_stride = time.time() - start_time
+            compress_timing = time_stride // compress_time
+            record_timing = time_stride // record_time
+
         if compress_timing - last_compress_timing >= 1:
             last_compress_timing = compress_timing
             person_caches = compression_person(person_caches)
 
-        if is_video:
-            record_timing = frame_num * video_speed // fps_record_time
-            # record_timing_times 计时的次数(或许speed_step太快导致 一帧就超过了计时间隔/或者FPS太小导致一帧就超过了计时间隔)
-            record_timing_times = record_timing - last_record_timing
-            if record_timing_times >= 1:
-                last_record_timing = record_timing
-                person_caches = compute_time(person_caches, record_time * int(record_timing_times))
+        if record_timing - last_record_timing >= 1:
+            last_record_timing = record_timing
+            person_caches = compute_time(person_caches, record_time)
 
-        if callback_progress:
-            callback_timing = frame_num * video_speed // fps_callback_time
-            if callback_timing - last_callback_timing >= 1:
-                last_callback_timing = callback_timing
-                percentage = callback_timing * callback_time / video_total_time
-                callback_progress(percentage)
+        if is_video:
+            if callback_progress:
+                callback_timing = frame_num // fps_callback_time
+                if callback_timing - last_callback_timing >= 1:
+                    last_callback_timing = callback_timing
+                    percentage = callback_timing * callback_time / video_total_time
+                    callback_progress(percentage)
 
         if callback_video:
             callback_video(image)
@@ -128,8 +139,10 @@ def video(src_video, dst_video, dst_txt,
             videoWriter.write(image)
 
         if show_fps:
-            if frame_num % (10 * video_speed) == 0:
-                print("FPS: ", 1.0 / (time.time() - start_time))  # FPS = 1 / time to process loop
+            if frame_num % (show_fps * video_speed) == 0:
+                fps_time_t = time.time()
+                print("FPS: ", show_fps / (fps_time_t - fps_time_t_1))  # FPS = 1 / time to process loop
+                fps_time_t_1 = fps_time_t
     person_caches = compression_person(person_caches)
     if dst_txt:
         write_person(person_caches, dst_txt)

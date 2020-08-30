@@ -17,10 +17,10 @@ class Config:
     face_data_csv = 'data/4329.csv'
 
     wight_padding = 220
-    is_video = True
+
     vis_video = True
-    show_fps = True
-    video_speed = 1
+    show_fps = 0  # 10
+    video_speed = 2  # 最好小于5
 
     compress_time = 60
     record_time = 1
