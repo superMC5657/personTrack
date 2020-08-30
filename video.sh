@@ -1,1 +1,1 @@
-python video.py -i data/data1.avi -o data/output.avi --dst_txt data/output.txt
+python demo.py -i data/data1.avi -o data/output.avi --dst_txt data/output.txt

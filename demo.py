@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # !@time: 2020/6/10 下午10:30
 # !@author: superMC @email: 18758266469@163.com
-# !@fileName: video.py
+# !@fileName: demo.py
 import argparse
 import os
 import sys
@@ -25,8 +25,8 @@ from self_utils.utils import compute_time, write_person, get_video_duration_cv2
 torch.set_grad_enabled(False)
 
 
-def video(src_video, dst_video, dst_txt,
-          callback_progress=None, callback_video=None):
+def demo(src_video, dst_video, dst_txt,
+         callback_progress=None, callback_video=None):
     src_video_cap = cv2.VideoCapture(src_video)
     src_video_fps = src_video_cap.get(cv2.CAP_PROP_FPS)
     video_size = (
@@ -163,7 +163,7 @@ def parse_arguments(argv):
 
 def main(args):
     start_time = time.time()
-    video(args.src_video, args.dst_video, args.dst_txt, callback_progress=callback_progress)
+    demo(args.src_video, args.dst_video, args.dst_txt, callback_progress=callback_progress)
     print(time.time() - start_time)
 
 

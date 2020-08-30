@@ -1,1 +1,1 @@
-python video.py -i rtsp://admin:stp123456@10.20.216.102/Streaming/Channels/2 -o data/output.avi --dst_txt data/output.txt
+python demo.py -i rtsp://admin:stp123456@10.20.216.102/Streaming/Channels/2 -o data/output.avi --dst_txt data/output.txt
