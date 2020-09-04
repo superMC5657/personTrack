@@ -23,3 +23,6 @@ yolov4 在coco上检测了80类,倘若只检测行人可以大幅度压缩模型
 # 统一使用root路径执行文件
 
 https://github.com/ultralytics/yolov5/issues/22
+
+# pyqt5 
++ ui->py : python -m PyQt5.uic.pyuic ./v1.ui -o v1.py
