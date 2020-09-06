@@ -1,4 +1,0 @@
-video 方法内部设置两个 callback_functions
-callback_progress callback_video 可以设置时间间隔
-callback_progress 用来展示进度条 传入进度
-callback_video 用来展示视频  传入image

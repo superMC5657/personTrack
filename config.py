@@ -16,9 +16,11 @@ class Config:
     person_metric = 'euclidean'
     face_data_csv = 'data/4329.csv'
 
+    default_output_name = "output"
+
     wight_padding = 220
 
-    vis_video = True
+    vis_video = False
     show_fps = 0  # 10
     video_speed = 2  # 最好小于5
 
