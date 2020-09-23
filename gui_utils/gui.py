@@ -120,11 +120,11 @@ class Gui:
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.open.setText(_translate("MainWindow", "Open"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "VSR"))
+        self.open.setText(_translate("MainWindow", "Start"))
         self.close.setText(_translate("MainWindow", "Close"))
-        self.radioButtonVideo.setText(_translate("MainWindow", "Video"))
-        self.radioButtonCam.setText(_translate("MainWindow", "Camera"))
+        self.radioButtonVideo.setText(_translate("MainWindow", "Offline"))
+        self.radioButtonCam.setText(_translate("MainWindow", "Online"))
         self.input_video_path_title.setText(_translate("MainWindow", "Input video path"))
         self.input_camera_rtsp_title.setText(_translate("MainWindow", "Input camera rtsp"))
         self.output_path_title.setText(_translate("MainWindow", "Output path"))

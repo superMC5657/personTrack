@@ -89,7 +89,7 @@ class GuiEvent:
             self.rtsp_path = self.ui.input_camera_rtsp.toPlainText()
             self.demo = Demo(self.rtsp_path, self.output_video, self.output_txt, callback_video=self.callback_video,
                              is_video=self.isVideo)
-        self.demo.start()
+        self.demo.start()  # demo.start() 在执行open函数之后,就回收了,所以要使用self.demo,这样可以保留
 
     def close(self):
         # 关闭事件设为触发，关闭视频播放

@@ -44,7 +44,7 @@ def demo_tensorflow(tfpb_file="./weight/yolov4.pb", image_path=None, print_senso
 
         feed_dict = {inp: img_in}
 
-        outputs = persisted_sess.open([out1, out2, out3], feed_dict)
+        outputs = persisted_sess.run([out1, out2, out3], feed_dict)
         print(outputs[0].shape)
         print(outputs[1].shape)
         print(outputs[2].shape)

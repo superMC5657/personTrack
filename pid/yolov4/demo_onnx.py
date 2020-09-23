@@ -45,7 +45,7 @@ def detect(session, image_src):
 
     # print(img_in)
 
-    outputs = session.open(None, {input_name: img_in})
+    outputs = session.run(None, {input_name: img_in})
 
     '''
     print(len(outputs))
