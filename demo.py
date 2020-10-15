@@ -18,6 +18,7 @@ from fid.insightFace.faceNet import FaceNet
 from fid.retinaFace.detector import Detector as RetinaFace
 from pid.yolov5.yolov5 import YoloV5
 from self_utils.image_tool import plot_boxes_pil
+from self_utils.models import init_models
 from self_utils.person_tracker import generate_person, update_person
 from self_utils.person_utils import compression_person
 from self_utils.utils import compute_time, write_person, get_video_duration_cv2
@@ -26,7 +27,8 @@ torch.set_grad_enabled(False)
 
 
 class Demo(QThread):
-    def __init__(self, src_video, dst_video, dst_txt, callback_progress=None, callback_video=None, is_video=False):
+    def __init__(self, src_video, dst_video, dst_txt, models, callback_progress=None, callback_video=None,
+                 is_video=False):
         # 是否为视频 (如果实时 代码逻辑会不同 需要靠time模块计时)
         super().__init__()
         self.src_video = src_video
@@ -35,6 +37,7 @@ class Demo(QThread):
         self.callback_progress = callback_progress
         self.callback_video = callback_video
         self.is_video = is_video
+        self.models = models
 
     def run(self):
 
@@ -78,16 +81,8 @@ class Demo(QThread):
                 (video_size[0] + opt.wight_padding, video_size[1])
             )
 
-        yolo = YoloV5()
-        reid = FeatureExtractor(
-            model_name='osnet_x1_0',
-            model_path='pid/deep_person_reid/checkpoints/osnet_x1_0_market_256x128_amsgrad_ep150_stp60_lr0.0015_b64_fb10_softmax_labelsmooth_flip.pth',
-            verbose=False)
-        face_detector = RetinaFace(image_size=(video_size[1], video_size[0]))
-        # detector = MTCNN()
-        faceNet = FaceNet()
         person_caches = []
-
+        yolo, reid, face_detector, faceNet = self.models
         start_time = time.time()
         fps_time_t_1 = start_time
         while src_video_cap.isOpened():
@@ -178,7 +173,8 @@ def parse_arguments(argv):
 
 def main(args):
     start_time = time.time()
-    demo = Demo(args.src_video, args.dst_video, args.dst_txt)
+    models = init_models()
+    demo = Demo(args.src_video, args.dst_video, args.dst_txt, models)
     demo.run()
     print(time.time() - start_time)
 

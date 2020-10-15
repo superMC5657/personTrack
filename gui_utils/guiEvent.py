@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QFileDialog
 
 from config import opt
 from demo import Demo
+from self_utils.models import init_models
 
 
 class GuiEvent:
@@ -37,7 +38,8 @@ class GuiEvent:
         self.stopEvent = threading.Event()
         self.stopEvent.clear()
         self.ui.close.setEnabled(False)
-
+        self.modes = init_models()
+        print(" ")
     def callback_progress(self, percentage):
         self.ui.video_progressBar.setProperty("value", percentage * 100)
 
@@ -82,12 +84,13 @@ class GuiEvent:
         self.ui.close.setEnabled(True)
         self.ui.open.setEnabled(False)
         if self.isVideo:
-            self.demo = Demo(self.fileName, self.output_video, self.output_txt, self.callback_progress,
+            self.demo = Demo(self.fileName, self.output_video, self.output_txt, self.modes, self.callback_progress,
                              self.callback_video,
                              self.isVideo)
         else:
             self.rtsp_path = self.ui.input_camera_rtsp.toPlainText()
-            self.demo = Demo(self.rtsp_path, self.output_video, self.output_txt, callback_video=self.callback_video,
+            self.demo = Demo(self.rtsp_path, self.output_video, self.output_txt, self.modes,
+                             callback_video=self.callback_video,
                              is_video=self.isVideo)
         self.demo.start()  # demo.start() 在执行open函数之后,就回收了,所以要使用self.demo,这样可以保留
 

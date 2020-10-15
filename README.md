@@ -12,8 +12,8 @@ yolov4 在coco上检测了80类,倘若只检测行人可以大幅度压缩模型
 #### 速度  
 + yolov4 50ms  
 + reid 15ms  
-+ mtcnn 20ms  
-+ mobilefacenet 5ms
++ retinaface 10ms  
++ ir_se50 5ms
 
 + batch inference  
   同时刻t时间内 所有的检测框一同送入识别模块提取特征
