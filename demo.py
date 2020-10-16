@@ -153,6 +153,14 @@ class Demo(QThread):
                     fps_time_t_1 = fps_time_t
             if is_break:
                 break
+            ret, image = cv2.imencode('.jpg', image)
+            if self.is_video:
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + image.tobytes() + b'\r\n\r\n')
+            else:
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + image.tobytes() + b'\r\n\r\n')
+
         person_caches = compression_person(person_caches)
         if self.dst_txt:
             write_person(person_caches, self.dst_txt)
@@ -160,6 +168,7 @@ class Demo(QThread):
         if self.dst_video:
             videoWriter.release()
         cv2.destroyAllWindows()
+        return None
 
 
 def parse_arguments(argv):
