@@ -4,6 +4,11 @@
     <title>Video Streaming Demonstration</title>
 </head>
 <body>
+<label for="avatar">Choose a profile picture:</label>
+
+<input type="file"
+       id="avatar" name="avatar"
+       accept="image/png, image/jpeg">
 <h1>Video Streaming Demonstration</h1>
 <img src="{{ url_for('video_feed') }}">
 </body>

@@ -7,12 +7,12 @@ from torchreid.metrics import compute_distance_matrix
 
 from config import opt
 from self_utils.person import Person, Person_Cache
-from self_utils.person_utils import database_features, database_labels, \
-    filter_matches_between_people_and_face_frames, combine_cur_pid, combine_cache_pid, compress_cost_matrix, \
-    person_face_cost, person_face_cost_cpp
+from self_utils.person_utils import filter_matches_between_people_and_face_frames, combine_cur_pid, combine_cache_pid, \
+    compress_cost_matrix, person_face_cost, person_face_cost_cpp
 
 
 def generate_person(person_features, person_boxes, face_features=None, face_boxes=None, face_effective=None,
+                    database_features=None, database_labels=None,
                     out_face_threshold=opt.out_face_threshold, face_threashold=opt.face_threshold,
                     metric=opt.face_metric):
     """

@@ -4,27 +4,11 @@
 # !@fileName: web_flask.py
 from flask import Flask, render_template, Response
 import cv2
+
+from config import opt
 from demo import Demo
 from self_utils.models import init_models
-
-
-class VideoCamera(object):
-    def __init__(self):
-        # 通过opencv获取实时视频流
-        self.video = cv2.VideoCapture("data/data1.avi")
-
-    def __del__(self):
-        self.video.release()
-
-    def get_frame(self):
-        success, image = self.video.read()
-        # 因为opencv读取的图片并非jpeg格式，因此要用motion JPEG模式需要先将图片转码成jpg格式图片
-        if success:
-            ret, jpeg = cv2.imencode('.jpg', image)
-            return jpeg.tobytes()
-        else:
-            return None
-
+from self_utils.utils import get_data
 
 app = Flask(__name__)
 
@@ -37,15 +21,18 @@ def index():
 
 @app.route('/video_feed')  # 这个地址返回视频流响应
 def video_feed():
+    is_video = True
     input_video = 'data/data1.avi'
     output_video = 'data/output.avi'
     dst_txt = 'data/output.txt'
-    models = init_models()
-    is_video = True
-    demo = Demo(input_video, output_video, dst_txt, models, is_video=is_video)
+    demo = Demo(input_video, output_video, dst_txt, models, is_video=is_video, database_labels=database_labels,
+                database_features=database_features)
     return Response(demo.run(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 if __name__ == '__main__':
-    app.run(host='10.20.216.1', debug=True, port=5000)
+    global models, database_labels, database_features
+    models = init_models()
+    database_labels, database_features = get_data(csv_path=opt.face_data_csv)
+    app.run(host='10.20.216.1', debug=False, port=5000, use_reloader=False)

@@ -8,8 +8,6 @@ import zyan
 from config import opt
 from self_utils.utils import get_data, crop_box, totensor, tonumpy
 
-database_labels, database_features = get_data(opt.face_data_csv)
-
 
 def compression_person(person_cache):
     """

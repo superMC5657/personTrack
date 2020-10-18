@@ -11,24 +11,20 @@ import cv2
 import numpy as np
 import torch
 from PyQt5.QtCore import QThread
-from torchreid.utils import FeatureExtractor
 
 from config import opt
-from fid.insightFace.faceNet import FaceNet
-from fid.retinaFace.detector import Detector as RetinaFace
-from pid.yolov5.yolov5 import YoloV5
 from self_utils.image_tool import plot_boxes_pil
 from self_utils.models import init_models
 from self_utils.person_tracker import generate_person, update_person
 from self_utils.person_utils import compression_person
-from self_utils.utils import compute_time, write_person, get_video_duration_cv2
+from self_utils.utils import compute_time, write_person, get_video_duration_cv2, get_data
 
 torch.set_grad_enabled(False)
 
 
 class Demo(QThread):
     def __init__(self, src_video, dst_video, dst_txt, models, callback_progress=None, callback_video=None,
-                 is_video=False):
+                 is_video=False, database_labels=None, database_features=None):
         # 是否为视频 (如果实时 代码逻辑会不同 需要靠time模块计时)
         super().__init__()
         self.src_video = src_video
@@ -38,6 +34,7 @@ class Demo(QThread):
         self.callback_video = callback_video
         self.is_video = is_video
         self.models = models
+        self.database_labels, self.database_features = database_labels, database_features
 
     def run(self):
 
@@ -105,7 +102,7 @@ class Demo(QThread):
                     face_features = faceNet(face_images)
 
                 person_current = generate_person(person_features, person_boxes, face_features, face_boxes,
-                                                 face_effective)
+                                                 face_effective, self.database_features, self.database_labels)
                 person_current, person_caches, person_id = update_person(person_id, person_current, person_caches)
                 image = plot_boxes_pil(image, person_current)
 
@@ -155,6 +152,7 @@ class Demo(QThread):
                 break
             ret, image = cv2.imencode('.jpg', image)
             if self.is_video:
+                # 进度条
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + image.tobytes() + b'\r\n\r\n')
             else:
