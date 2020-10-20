@@ -7,15 +7,6 @@
 <body>
 
 <style type="text/css">
-    body {
-        display: flex;
-        justify-content: center;
-
-        box-sizing: border-box;
-
-        align-items: start;
-    }
-
 
     form {
         display: flex;
@@ -56,49 +47,66 @@
     }
 
     .video-player {
+        float: right;
+    }
+
+    .container {
         float: left;
+        width: 480px;
+        display: inline-block;
     }
 
 </style>
 
 <div>
-    <form action="/uploader" method="POST" enctype="multipart/form-data">
-
-        <input type="file" name="file" accept=".mp4,.avi"/>
-        <input placeholder="请输入rtsp" type="textarea" value="rtsp://admin:stp123456@10.20.216.46/Streaming/Channels/2"
-               name="remote"/>
-
-        <div class="radio-group">
-
-            {% if is_video %}
-
-
-            <div><input type="radio" name='input_type' value="video" checked='checked'/> Video</div>
-            <div><input type="radio" name='input_type' value="realtime"/> Realtime</div>
-
-            {% else %}
-
-            <div><input type="radio" name='input_type' value="video"/> Video</div>
-            <div><input type="radio" name='input_type' value="realtime" checked="checked"/> Realtime</div>
-
-            {% endif %}
-
-        </div>
-
-
-        <input type="submit" class="submit"/>
-    </form>
-    {% if filename %}
-    {% for file in download_list %}
-    <li><a href="{{ url_for('download',filename=file)}}" methods="GET">{{ file }}</a></li>
-    {% endfor %}
-    {% endif %}
+    <h1 align="center">人流监控管理系统</h1>
 </div>
-<!--{% if filename %}-->
-<!--<div class="video-player">-->
-<!--    <img src="{{ url_for('video_feed') }}">-->
-<!--</div>-->
-<!--{% endif %}-->
+<div display="flex">
+    <div align=" center">
+        <div class="container">
+            <form action="/uploader" method="POST" enctype="multipart/form-data">
+
+                <input type="file" name="file" accept=".mp4,.avi"/>
+                <input placeholder="请输入rtsp" type="textarea"
+                       value="rtsp://admin:stp123456@10.20.216.46/Streaming/Channels/2"
+                       name="remote"/>
+
+                <div class="radio-group">
+
+                    {% if is_video %}
+
+
+                    <div><input type="radio" name='input_type' value="video" checked='checked'/> Video</div>
+                    <div><input type="radio" name='input_type' value="realtime"/> Realtime</div>
+
+                    {% else %}
+
+                    <div><input type="radio" name='input_type' value="video"/> Video</div>
+                    <div><input type="radio" name='input_type' value="realtime" checked="checked"/> Realtime</div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <input type="submit" class="submit"/>
+            </form>
+            {% if filename %}
+            <form method="GET">
+                {% for file in download_list %}
+                <a href="{{ url_for('download',filename=file)}}">{{file}}</a>
+
+                {% endfor %}
+            </form>
+            {% endif %}
+        </div>
+        {% if filename %}
+        <div class="video-player">
+            <img src="{{ url_for('video_feed') }}">
+        </div>
+        {% endif %}
+    </div>
+</div>
 </body>
 </html>
 
