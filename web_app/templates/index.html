@@ -7,6 +7,29 @@
 <body>
 
 <style type="text/css">
+    a{
+        line-height:40pt;
+        text-decoration:none;
+        color: black;
+        font-size:12pt;
+        background-color:#87ceeb;
+        margin-top: 8px;
+        text-align:center;
+
+    }
+    a:hover{
+        font-size:16pt;
+        font-weight:1000;
+        text-shadow:0 3px 3px #5c5c5c;
+        opacity:.8;
+    }
+
+    .container {
+        display:flex;
+        justify-content:center;
+
+
+    }
 
     form {
         display: flex;
@@ -14,7 +37,6 @@
         flex-direction: column;
         border-radius: 5px;
 
-        float: left;
         margin-left: 40px;
         box-sizing: border-box;
         padding: 24px;
@@ -39,7 +61,7 @@
 
     .submit {
         height: 40px;
-        background: skyblue;
+        background: #87ceeb;
         font-size: 12pt;
         border: none;
         border-radius: 3px;
@@ -48,13 +70,15 @@
 
     .video-player {
         float: right;
+
     }
 
-    .container {
-        float: left;
+    .form-group {
+
         width: 480px;
         display: inline-block;
     }
+
 
 </style>
 
@@ -62,8 +86,8 @@
     <h1 align="center">人流监控管理系统</h1>
 </div>
 <div display="flex">
-    <div align=" center">
-        <div class="container">
+    <div class="container">
+        <div class="form-group">
             <form action="/uploader" method="POST" enctype="multipart/form-data">
 
                 <input type="file" name="file" accept=".mp4,.avi"/>

@@ -46,7 +46,8 @@ def uploader():
         demo = Demo(src_video, dst_video, dst_txt, models, is_video=is_video, database_labels=database_labels,
                     database_features=database_features)
 
-        return render_template('index.html', filename=filename, is_video=is_video, download_list=[filename, os.path.splitext(filename)[0]+'.txt'])
+        return render_template('index.html', filename=filename, is_video=is_video,
+                               download_list=[filename, os.path.splitext(filename)[0] + '.txt'])
 
 
 @app.route('/download/<filename>', methods=['GET'])
