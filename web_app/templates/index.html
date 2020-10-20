@@ -3,13 +3,102 @@
 <head>
     <title>Video Streaming Demonstration</title>
 </head>
-<body>
-<label for="avatar">Choose a profile picture:</label>
 
-<input type="file"
-       id="avatar" name="avatar"
-       accept="image/png, image/jpeg">
-<h1>Video Streaming Demonstration</h1>
-<img src="{{ url_for('video_feed') }}">
+<body>
+
+<style type="text/css">
+    body {
+        display: flex;
+        justify-content: center;
+
+        box-sizing: border-box;
+
+        align-items: start;
+    }
+
+
+    form {
+        display: flex;
+        justify-content: space-between;
+        flex-direction: column;
+        border-radius: 5px;
+
+        float: left;
+        margin-left: 40px;
+        box-sizing: border-box;
+        padding: 24px;
+        margin-top: 40px;
+        width: 400px;
+        border: 1px solid #5c5c5c;
+        box-shadow: 3px 3px 5px #5c5c5c;
+
+    }
+
+    form > input {
+        margin-top: 24px;
+        height: 32px;
+    }
+
+    .radio-group {
+        margin-top: 24px;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .submit {
+        height: 40px;
+        background: skyblue;
+        font-size: 12pt;
+        border: none;
+        border-radius: 3px;
+
+    }
+
+    .video-player {
+        float: left;
+    }
+
+</style>
+
+<div>
+    <form action="/uploader" method="POST" enctype="multipart/form-data">
+
+        <input type="file" name="file" accept=".mp4,.avi"/>
+        <input placeholder="请输入rtsp" type="textarea" value="rtsp://admin:stp123456@10.20.216.46/Streaming/Channels/2"
+               name="remote"/>
+
+        <div class="radio-group">
+
+            {% if is_video %}
+
+
+            <div><input type="radio" name='input_type' value="video" checked='checked'/> Video</div>
+            <div><input type="radio" name='input_type' value="realtime"/> Realtime</div>
+
+            {% else %}
+
+            <div><input type="radio" name='input_type' value="video"/> Video</div>
+            <div><input type="radio" name='input_type' value="realtime" checked="checked"/> Realtime</div>
+
+            {% endif %}
+
+        </div>
+
+
+        <input type="submit" class="submit"/>
+    </form>
+    {% if filename %}
+    {% for file in download_list %}
+    <li><a href="{{ url_for('download',filename=file)}}" methods="GET">{{ file }}</a></li>
+    {% endfor %}
+    {% endif %}
+</div>
+<!--{% if filename %}-->
+<!--<div class="video-player">-->
+<!--    <img src="{{ url_for('video_feed') }}">-->
+<!--</div>-->
+<!--{% endif %}-->
 </body>
 </html>
+
