@@ -45,7 +45,7 @@ class Person_Cache:
     def update_pid_caches(self, person):
         self.pid_caches[self.replace_index, :] = person.pid
         self.replace_index += 1
-        self.replace_index %= opt.pid_stride
+        self.replace_index %= opt.pid_cache_maxLen
 
     def update_base(self, person):
         self.id = person.id
